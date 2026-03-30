@@ -3,7 +3,6 @@
 
 import { useCallback, useState } from "react";
 import { Upload, FileText, AlertCircle } from "lucide-react";
-import { clsx } from "clsx";
 
 interface DropZoneProps {
   onFile: (file: File) => void;
@@ -47,66 +46,89 @@ export function DropZone({ onFile, disabled }: DropZoneProps) {
 
   return (
     <>
-    <label
-      htmlFor="pdf-upload"
-      className={clsx(
-        "relative flex flex-col items-center justify-center w-full min-h-[280px] rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer group",
-        isDragging
-          ? "border-blue-500 bg-blue-500/10 scale-[1.01]"
-          : "border-white/20 bg-white/5 hover:border-blue-400/60 hover:bg-white/8",
-        disabled && "opacity-50 cursor-not-allowed"
+      <label
+        htmlFor="pdf-upload"
+        onDragOver={(e) => { e.preventDefault(); if (!disabled) setIsDragging(true); }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={onDrop}
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          width: "100%",
+          minHeight: 240,
+          borderRadius: 16,
+          border: isDragging
+            ? "2px dashed var(--accent)"
+            : "2px dashed var(--border)",
+          background: isDragging ? "var(--accent-light)" : "var(--cream)",
+          cursor: disabled ? "not-allowed" : "pointer",
+          opacity: disabled ? 0.5 : 1,
+          transition: "all 0.15s",
+          transform: isDragging ? "scale(1.005)" : "scale(1)",
+        }}
+      >
+        <input
+          id="pdf-upload"
+          type="file"
+          accept=".pdf,application/pdf"
+          style={{ position: "absolute", width: 1, height: 1, opacity: 0 }}
+          onChange={onInputChange}
+          disabled={disabled}
+        />
+
+        <div style={{
+          display: "flex", flexDirection: "column", alignItems: "center",
+          gap: 16, padding: "32px 48px", textAlign: "center",
+        }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: 16,
+            background: isDragging ? "var(--accent)" : "var(--paper)",
+            border: "1px solid var(--border)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            transition: "all 0.15s",
+          }}>
+            {isDragging ? (
+              <FileText size={32} color="#fff" />
+            ) : (
+              <Upload size={32} color="var(--accent)" />
+            )}
+          </div>
+
+          <div>
+            <p style={{ fontSize: 18, fontWeight: 500, color: "var(--ink)", marginBottom: 6 }}>
+              {isDragging ? "Drop your PDF here" : "Drop PDF here or click to browse"}
+            </p>
+            <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
+              Any PDF — digital or scanned. Your file never leaves your device.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap", justifyContent: "center" }}>
+            {["PDF → Word / Excel / Text", "Tables preserved", "Works offline"].map((tag) => (
+              <span key={tag} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                fontSize: 12, color: "var(--accent)", fontWeight: 500,
+              }}>
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--accent)", flexShrink: 0 }} />
+                {tag}
+              </span>
+            ))}
+          </div>
+        </div>
+      </label>
+
+      {fileError && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          marginTop: 8, fontSize: 13, color: "#b0392a",
+        }}>
+          <AlertCircle size={14} />
+          {fileError}
+        </div>
       )}
-      onDragOver={(e) => { e.preventDefault(); if (!disabled) setIsDragging(true); }}
-      onDragLeave={() => setIsDragging(false)}
-      onDrop={onDrop}
-    >
-      <input
-        id="pdf-upload"
-        type="file"
-        accept=".pdf,application/pdf"
-        className="sr-only"
-        onChange={onInputChange}
-        disabled={disabled}
-      />
-
-      <div className="flex flex-col items-center gap-4 px-8 text-center pointer-events-none">
-        <div className={clsx(
-          "w-20 h-20 rounded-2xl flex items-center justify-center transition-all duration-200",
-          isDragging ? "bg-blue-500/30" : "bg-white/10 group-hover:bg-blue-500/20"
-        )}>
-          {isDragging ? (
-            <FileText className="w-9 h-9 text-blue-400" />
-          ) : (
-            <Upload className="w-9 h-9 text-white/60 group-hover:text-blue-400 transition-colors" />
-          )}
-        </div>
-
-        <div>
-          <p className="text-xl font-semibold text-white/90">
-            {isDragging ? "Drop your PDF here" : "Drop PDF here or click to browse"}
-          </p>
-          <p className="mt-2 text-sm text-white/40">
-            Any PDF — scanned, digital, or mixed. Your file never leaves your device.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-6 mt-2">
-          {["PDF → DOCX", "Tables preserved", "Works offline"].map((tag) => (
-            <span key={tag} className="flex items-center gap-1.5 text-xs text-white/50">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400/70" />
-              {tag}
-            </span>
-          ))}
-        </div>
-      </div>
-    </label>
-
-    {fileError && (
-      <div className="flex items-center gap-2 mt-2 text-sm text-red-400">
-        <AlertCircle className="w-4 h-4 shrink-0" />
-        {fileError}
-      </div>
-    )}
     </>
   );
 }

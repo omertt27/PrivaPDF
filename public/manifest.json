@@ -1,0 +1,23 @@
+{
+  "name": "PrivaPDF",
+  "short_name": "PrivaPDF",
+  "description": "PDF converter that never sees your files. Works offline.",
+  "start_url": "/convert",
+  "display": "standalone",
+  "background_color": "#faf8f4",
+  "theme_color": "#1a472a",
+  "orientation": "any",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Convert PDF",
+      "url": "/convert",
+      "description": "Convert a PDF to Word"
+    }
+  ]
+}

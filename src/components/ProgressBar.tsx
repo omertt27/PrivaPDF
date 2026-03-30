@@ -1,34 +1,43 @@
 "use client";
 // ProgressBar.tsx — animated progress bar with stage label
 
-import { clsx } from "clsx";
-
 interface ProgressBarProps {
   percent: number;
   stage: string;
   color?: "blue" | "green" | "orange";
 }
 
-export function ProgressBar({ percent, stage, color = "blue" }: ProgressBarProps) {
-  const colorMap = {
-    blue: "from-blue-500 to-blue-400",
-    green: "from-green-500 to-emerald-400",
-    orange: "from-orange-500 to-amber-400",
-  };
+const colorMap = {
+  blue: "#3b82f6",
+  green: "var(--accent)",
+  orange: "#f97316",
+};
 
+export function ProgressBar({ percent, stage, color = "green" }: ProgressBarProps) {
   return (
-    <div className="w-full space-y-2">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-white/70 truncate max-w-[80%]">{stage}</span>
-        <span className="text-white/50 font-mono tabular-nums">{Math.round(percent)}%</span>
+    <div style={{ width: "100%" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <span style={{ fontSize: 13, color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "80%" }}>
+          {stage}
+        </span>
+        <span style={{ fontSize: 13, color: "var(--muted)", fontVariantNumeric: "tabular-nums", flexShrink: 0 }}>
+          {Math.round(percent)}%
+        </span>
       </div>
-      <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+      <div style={{
+        width: "100%", height: 8, borderRadius: 4,
+        background: "var(--cream)",
+        border: "1px solid var(--border)",
+        overflow: "hidden",
+      }}>
         <div
-          className={clsx(
-            "h-full rounded-full bg-gradient-to-r transition-all duration-300 ease-out",
-            colorMap[color]
-          )}
-          style={{ width: `${Math.min(100, Math.max(0, percent))}%` }}
+          style={{
+            height: "100%",
+            borderRadius: 4,
+            background: colorMap[color],
+            width: `${Math.min(100, Math.max(0, percent))}%`,
+            transition: "width 0.3s ease-out",
+          }}
         />
       </div>
     </div>

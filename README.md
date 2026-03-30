@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PrivaPDF
+
+> **PDF converter that never sees your files.** All processing happens locally in the browser using WebGPU, WASM, and on-device AI — zero uploads, zero servers, zero data exposure.
+
+---
+
+## ⚠️ Contributions & Pull Requests
+
+**This repository does not accept pull requests or external contributions.**
+
+This is a private, solo-founder project. All code is proprietary. Please do not open PRs, forks intended for merging, or feature requests via issues. Any pull requests opened will be closed without review.
+
+If you have found a security vulnerability, contact privately via email instead of opening a public issue.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 (App Router, Turbopack) |
+| Language | TypeScript |
+| Styling | Tailwind CSS |
+| PDF Parsing | PDF.js |
+| AI Runtime | Transformers.js v3 |
+| GPU Acceleration | WebGPU → WASM fallback |
+| OCR Model | Docling / IBM Granite 258M (q4) |
+| Layout Model | SmolVLM-256M (q4) |
+| Output Generation | docx-js |
+| Model Caching | IndexedDB (browser-native) |
+| Hosting | Vercel |
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
-```bash
+\`\`\`bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+\`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## How It Works
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. **Text PDFs** — PDF.js extracts embedded text directly. Converts in ~2 seconds. No AI, no download.
+2. **Scanned PDFs** — SmolVLM analyzes layout, Docling/Granite runs OCR. All on-device via WebGPU or WASM fallback.
+3. **Output** — `docx-js` builds the `.docx` file entirely in the browser and triggers a local download.
 
-## Learn More
+## Security Headers
 
-To learn more about Next.js, take a look at the following resources:
+The app requires these headers on every response to enable `SharedArrayBuffer` for multi-threaded AI inference:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+\`\`\`
+Cross-Origin-Opener-Policy: same-origin
+Cross-Origin-Embedder-Policy: require-corp
+\`\`\`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+These are set in both `next.config.ts` (local dev) and `vercel.json` (production).
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+© 2026 PrivaPDF. All rights reserved.

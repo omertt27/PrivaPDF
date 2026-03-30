@@ -1,0 +1,561 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Merge, Scissors, Minimize2, Unlock, RotateCcw, CheckCircle, AlertCircle, ArrowUp, ArrowDown } from "lucide-react";
+import { usePdfTools } from "@/hooks/usePdfTools";
+import { ProgressBar } from "@/components/ProgressBar";
+
+type ToolTab = "merge" | "split" | "compress" | "unlock";
+
+const TABS: { id: ToolTab; label: string; icon: React.ReactNode; desc: string }[] = [
+  { id: "merge",    label: "Merge PDFs",   icon: <Merge size={16} />,     desc: "Combine multiple PDFs into one file" },
+  { id: "split",    label: "Split PDF",    icon: <Scissors size={16} />,  desc: "Extract pages as individual PDFs" },
+  { id: "compress", label: "Compress PDF", icon: <Minimize2 size={16} />, desc: "Reduce file size by up to 70%" },
+  { id: "unlock",   label: "Unlock PDF",   icon: <Unlock size={16} />,    desc: "Remove password protection locally" },
+];
+
+export default function ToolsPage() {
+  const [activeTab, setActiveTab] = useState<ToolTab>("merge");
+  const tools = usePdfTools();
+
+  const isProcessing = tools.status === "processing";
+
+  function switchTab(tab: ToolTab) {
+    setActiveTab(tab);
+    tools.reset();
+  }
+
+  return (
+    <div style={{ minHeight: "100vh", background: "var(--paper)" }}>
+      {/* ── Nav ── */}
+      <nav style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "20px 48px", borderBottom: "1px solid var(--border)",
+        position: "sticky", top: 0, background: "var(--paper)", zIndex: 100,
+      }}>
+        <Link href="/" style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", textDecoration: "none" }}>
+          Priva<span style={{ color: "var(--accent)" }}>PDF</span>
+        </Link>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+          <Link href="/convert" style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>Convert PDF</Link>
+          <Link href="/tools" style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500, textDecoration: "none" }}>PDF Tools</Link>
+        </div>
+      </nav>
+
+      <main style={{ maxWidth: 820, margin: "0 auto", padding: "56px 24px" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 40, textAlign: "center" }}>
+          <div style={{
+            fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
+            color: "var(--accent)", marginBottom: 14,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+          }}>
+            <span style={{ width: 20, height: 1, background: "var(--accent)", display: "inline-block" }} />
+            100% local · no uploads
+            <span style={{ width: 20, height: 1, background: "var(--accent)", display: "inline-block" }} />
+          </div>
+          <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(30px, 4vw, 48px)", lineHeight: 1.1, letterSpacing: -1.5, marginBottom: 14 }}>
+            PDF Tools
+          </h1>
+          <p style={{ fontSize: 15, color: "var(--muted)", maxWidth: 460, margin: "0 auto", lineHeight: 1.7, fontWeight: 300 }}>
+            Merge, split, compress, and unlock PDFs — everything runs in your browser.
+            Your files are <strong style={{ color: "var(--ink)", fontWeight: 500 }}>never uploaded.</strong>
+          </p>
+        </div>
+
+        {/* Tool tabs */}
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(4,1fr)",
+          border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden",
+          marginBottom: 32, background: "var(--cream)",
+        }}>
+          {TABS.map((tab, i) => (
+            <button
+              key={tab.id}
+              onClick={() => switchTab(tab.id)}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center",
+                gap: 6, padding: "18px 12px",
+                borderRight: i < 3 ? "1px solid var(--border)" : "none",
+                border: "none",
+                background: activeTab === tab.id ? "var(--paper)" : "transparent",
+                color: activeTab === tab.id ? "var(--accent)" : "var(--muted)",
+                fontWeight: activeTab === tab.id ? 600 : 400,
+                fontSize: 12, cursor: "pointer", fontFamily: "var(--sans)",
+                transition: "all 0.15s",
+                borderBottom: activeTab === tab.id ? "2px solid var(--accent)" : "2px solid transparent",
+              }}
+            >
+              {tab.icon}
+              <span style={{ fontSize: 12, lineHeight: 1.3, textAlign: "center" }}>{tab.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Tool card */}
+        <div style={{
+          background: "var(--paper)", border: "1px solid var(--border)",
+          borderRadius: 20, padding: "36px 40px",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        }}>
+          {/* ── MERGE ── */}
+          {activeTab === "merge" && (
+            <MergePanel tools={tools} isProcessing={isProcessing} />
+          )}
+          {/* ── SPLIT ── */}
+          {activeTab === "split" && (
+            <SplitPanel tools={tools} isProcessing={isProcessing} />
+          )}
+          {/* ── COMPRESS ── */}
+          {activeTab === "compress" && (
+            <CompressPanel tools={tools} isProcessing={isProcessing} />
+          )}
+          {/* ── UNLOCK ── */}
+          {activeTab === "unlock" && (
+            <UnlockPanel tools={tools} isProcessing={isProcessing} />
+          )}
+
+          {/* Shared: progress */}
+          {isProcessing && (
+            <div style={{ marginTop: 28 }}>
+              <ProgressBar percent={tools.progress.percent} stage={tools.progress.stage} color="green" />
+            </div>
+          )}
+
+          {/* Shared: done */}
+          {tools.status === "done" && (
+            <div style={{
+              marginTop: 24, display: "flex", alignItems: "center", gap: 12,
+              padding: "16px 20px", background: "#e8f5e9", borderRadius: 12,
+            }}>
+              <CheckCircle size={20} color="var(--accent)" />
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "var(--accent)" }}>Done!</p>
+                <p style={{ fontSize: 13, color: "var(--muted)" }}>
+                  {tools.progress.stage || "File downloaded. Check your Downloads folder."}
+                </p>
+              </div>
+              <button
+                onClick={tools.reset}
+                style={{
+                  marginLeft: "auto", display: "flex", alignItems: "center", gap: 6,
+                  background: "var(--ink)", color: "var(--paper)",
+                  border: "none", padding: "8px 16px", borderRadius: 8,
+                  fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--sans)",
+                }}
+              >
+                <RotateCcw size={12} /> Again
+              </button>
+            </div>
+          )}
+
+          {/* Shared: error */}
+          {tools.status === "error" && tools.error && (
+            <div style={{
+              marginTop: 24, display: "flex", alignItems: "center", gap: 12,
+              padding: "16px 20px", background: "#fef0ef", borderRadius: 12,
+            }}>
+              <AlertCircle size={20} color="#b0392a" />
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 500, color: "#b0392a" }}>Error</p>
+                <p style={{ fontSize: 13, color: "var(--muted)" }}>{tools.error}</p>
+              </div>
+              <button
+                onClick={tools.reset}
+                style={{
+                  marginLeft: "auto", display: "flex", alignItems: "center", gap: 6,
+                  background: "var(--ink)", color: "var(--paper)",
+                  border: "none", padding: "8px 16px", borderRadius: 8,
+                  fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--sans)",
+                }}
+              >
+                <RotateCcw size={12} /> Try again
+              </button>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ── Merge Panel ───────────────────────────────────────────────────────────────
+
+function MergePanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<Merge size={18} />}
+        title="Merge PDFs"
+        desc="Drag to reorder · All files processed in your browser · No uploads"
+      />
+
+      {/* Drop zone */}
+      <PdfDropZone onFiles={tools.addMergeFiles} label="Drop PDFs here or click to add" multiple />
+
+      {/* File list */}
+      {tools.mergeFiles.length > 0 && (
+        <div style={{ border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+          {tools.mergeFiles.map((f, idx) => (
+            <div key={idx} style={{
+              display: "flex", alignItems: "center", gap: 10,
+              padding: "11px 16px", borderBottom: idx < tools.mergeFiles.length - 1 ? "1px solid var(--border)" : "none",
+              background: "var(--paper)",
+            }}>
+              <span style={{ fontSize: 12, color: "var(--muted)", width: 20, textAlign: "right", flexShrink: 0 }}>{idx + 1}</span>
+              <span style={{ flex: 1, fontSize: 13, color: "var(--ink)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {f.name}
+              </span>
+              <span style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0 }}>{formatBytes(f.size)}</span>
+              <div style={{ display: "flex", gap: 4, flexShrink: 0 }}>
+                <IconBtn disabled={idx === 0} onClick={() => tools.reorderMergeFiles(idx, idx - 1)} title="Move up"><ArrowUp size={12} /></IconBtn>
+                <IconBtn disabled={idx === tools.mergeFiles.length - 1} onClick={() => tools.reorderMergeFiles(idx, idx + 1)} title="Move down"><ArrowDown size={12} /></IconBtn>
+                <IconBtn onClick={() => tools.removeMergeFile(idx)} title="Remove">✕</IconBtn>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <RunButton
+        disabled={isProcessing || tools.mergeFiles.length < 2}
+        onClick={() => tools.runMerge("merged")}
+        isProcessing={isProcessing}
+        label={`Merge ${tools.mergeFiles.length} file${tools.mergeFiles.length !== 1 ? "s" : ""} →`}
+        disabledReason={tools.mergeFiles.length < 2 ? "Add at least 2 PDF files" : undefined}
+      />
+    </div>
+  );
+}
+
+// ── Split Panel ───────────────────────────────────────────────────────────────
+
+function SplitPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<Scissors size={18} />}
+        title="Split PDF"
+        desc="Extract specific pages as individual PDFs · No uploads"
+      />
+
+      <PdfDropZone onFiles={(files) => tools.setSplitFile(files[0] || null)} label="Drop a PDF to split" />
+
+      {tools.splitFile && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px", background: "var(--cream)",
+          border: "1px solid var(--border)", borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 13, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tools.splitFile.name}
+          </span>
+          {tools.splitTotalPages > 0 && (
+            <span style={{ fontSize: 12, color: "var(--accent)", fontWeight: 500, flexShrink: 0 }}>
+              {tools.splitTotalPages} pages
+            </span>
+          )}
+          <IconBtn onClick={() => tools.setSplitFile(null)} title="Remove">✕</IconBtn>
+        </div>
+      )}
+
+      {tools.splitFile && tools.splitTotalPages > 0 && (
+        <div>
+          <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", display: "block", marginBottom: 8 }}>
+            Pages to extract
+          </label>
+          <input
+            type="text"
+            value={tools.splitPageList}
+            onChange={(e) => tools.setSplitPageList(e.target.value)}
+            placeholder={`e.g. 1,3,5-8 or "all" (1–${tools.splitTotalPages})`}
+            style={{
+              width: "100%", padding: "10px 14px",
+              border: "1.5px solid var(--border)", borderRadius: 8,
+              fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)",
+              background: "var(--paper)", outline: "none", boxSizing: "border-box",
+            }}
+          />
+          <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+            Each page downloads as a separate PDF. Use commas and ranges: <code>1,3,5-8</code>
+          </p>
+        </div>
+      )}
+
+      <RunButton
+        disabled={isProcessing || !tools.splitFile}
+        onClick={tools.runSplit}
+        isProcessing={isProcessing}
+        label="Extract pages →"
+        disabledReason={!tools.splitFile ? "Select a PDF first" : undefined}
+      />
+    </div>
+  );
+}
+
+// ── Compress Panel ────────────────────────────────────────────────────────────
+
+function CompressPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  const qualityLabel =
+    tools.compressQuality >= 0.85 ? "Light (high quality)" :
+    tools.compressQuality >= 0.65 ? "Medium (recommended)" :
+    "Aggressive (smaller file)";
+
+  const estReduction =
+    tools.compressQuality >= 0.85 ? "~20–35%" :
+    tools.compressQuality >= 0.65 ? "~40–60%" :
+    "~60–75%";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<Minimize2 size={18} />}
+        title="Compress PDF"
+        desc="Reduce file size by re-rendering at lower quality · No uploads"
+      />
+
+      <PdfDropZone onFiles={(files) => tools.setCompressFile(files[0] || null)} label="Drop a PDF to compress" />
+
+      {tools.compressFile && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px", background: "var(--cream)",
+          border: "1px solid var(--border)", borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 13, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tools.compressFile.name}
+          </span>
+          <span style={{ fontSize: 11, color: "var(--muted)", flexShrink: 0 }}>{formatBytes(tools.compressFile.size)}</span>
+          <IconBtn onClick={() => tools.setCompressFile(null)} title="Remove">✕</IconBtn>
+        </div>
+      )}
+
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>Compression level</label>
+          <span style={{ fontSize: 13, color: "var(--accent)", fontWeight: 500 }}>
+            {qualityLabel} · Est. {estReduction} reduction
+          </span>
+        </div>
+        <input
+          type="range"
+          min={0.3}
+          max={0.92}
+          step={0.05}
+          value={tools.compressQuality}
+          onChange={(e) => tools.setCompressQuality(parseFloat(e.target.value))}
+          style={{ width: "100%", accentColor: "var(--accent)" }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--muted)", marginTop: 4 }}>
+          <span>Smallest file</span>
+          <span>Best quality</span>
+        </div>
+      </div>
+
+      <RunButton
+        disabled={isProcessing || !tools.compressFile}
+        onClick={tools.runCompress}
+        isProcessing={isProcessing}
+        label="Compress PDF →"
+        disabledReason={!tools.compressFile ? "Select a PDF first" : undefined}
+      />
+    </div>
+  );
+}
+
+// ── Unlock Panel ──────────────────────────────────────────────────────────────
+
+function UnlockPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<Unlock size={18} />}
+        title="Unlock PDF"
+        desc="Remove password protection · Password never sent to any server"
+      />
+
+      <div style={{
+        padding: "12px 16px", background: "var(--accent-light)",
+        border: "1px solid var(--accent)", borderRadius: 10,
+        fontSize: 13, color: "var(--accent)",
+        display: "flex", alignItems: "flex-start", gap: 8,
+      }}>
+        <span style={{ flexShrink: 0, marginTop: 1 }}>🔒</span>
+        <span>
+          Your PDF password is used only inside this browser tab to decrypt the file locally.
+          It is <strong>never transmitted anywhere.</strong>
+        </span>
+      </div>
+
+      <PdfDropZone onFiles={(files) => tools.setUnlockFile(files[0] || null)} label="Drop a password-protected PDF" />
+
+      {tools.unlockFile && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px", background: "var(--cream)",
+          border: "1px solid var(--border)", borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 13, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tools.unlockFile.name}
+          </span>
+          <IconBtn onClick={() => tools.setUnlockFile(null)} title="Remove">✕</IconBtn>
+        </div>
+      )}
+
+      <div>
+        <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", display: "block", marginBottom: 8 }}>
+          PDF Password
+        </label>
+        <input
+          type="password"
+          value={tools.unlockPassword}
+          onChange={(e) => tools.setUnlockPassword(e.target.value)}
+          placeholder="Enter the PDF password"
+          onKeyDown={(e) => { if (e.key === "Enter" && !isProcessing && tools.unlockFile) tools.runUnlock(); }}
+          style={{
+            width: "100%", padding: "10px 14px",
+            border: "1.5px solid var(--border)", borderRadius: 8,
+            fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)",
+            background: "var(--paper)", outline: "none", boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      <RunButton
+        disabled={isProcessing || !tools.unlockFile || !tools.unlockPassword.trim()}
+        onClick={tools.runUnlock}
+        isProcessing={isProcessing}
+        label="Unlock & download PDF →"
+        disabledReason={!tools.unlockFile ? "Select a PDF first" : !tools.unlockPassword.trim() ? "Enter the password" : undefined}
+      />
+    </div>
+  );
+}
+
+// ── Shared sub-components ─────────────────────────────────────────────────────
+
+function SectionHeader({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 4 }}>
+      <div style={{
+        width: 44, height: 44, borderRadius: 12,
+        background: "var(--accent-light)", flexShrink: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "var(--accent)",
+      }}>
+        {icon}
+      </div>
+      <div>
+        <h2 style={{ fontFamily: "var(--serif)", fontSize: 22, marginBottom: 4, color: "var(--ink)" }}>{title}</h2>
+        <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>{desc}</p>
+      </div>
+    </div>
+  );
+}
+
+function PdfDropZone({ onFiles, label, multiple }: { onFiles: (files: File[]) => void; label: string; multiple?: boolean }) {
+  const [dragging, setDragging] = useState(false);
+
+  return (
+    <label
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault(); setDragging(false);
+        const files = Array.from(e.dataTransfer.files).filter((f) => f.type === "application/pdf");
+        if (files.length) onFiles(files);
+      }}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        padding: "20px 24px", borderRadius: 12,
+        border: dragging ? "2px dashed var(--accent)" : "1.5px dashed var(--border)",
+        background: dragging ? "var(--accent-light)" : "var(--cream)",
+        cursor: "pointer", fontSize: 13, color: "var(--muted)",
+        transition: "all 0.15s",
+      }}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={dragging ? "var(--accent)" : "var(--muted)"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+      {label}
+      <input
+        type="file"
+        accept="application/pdf"
+        multiple={multiple}
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const files = Array.from(e.target.files || []);
+          if (files.length) onFiles(files);
+          e.target.value = "";
+        }}
+      />
+    </label>
+  );
+}
+
+function RunButton({
+  disabled, onClick, isProcessing, label, disabledReason,
+}: {
+  disabled: boolean;
+  onClick: () => void;
+  isProcessing: boolean;
+  label: string;
+  disabledReason?: string;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <button
+        disabled={disabled}
+        onClick={onClick}
+        style={{
+          background: disabled ? "var(--border)" : "var(--ink)",
+          color: disabled ? "var(--muted)" : "var(--paper)",
+          border: "none", padding: "12px 24px", borderRadius: 9,
+          fontSize: 14, fontWeight: 500, cursor: disabled ? "not-allowed" : "pointer",
+          fontFamily: "var(--sans)", display: "flex", alignItems: "center", gap: 6,
+          transition: "all 0.15s",
+        }}
+      >
+        {isProcessing ? (
+          <>
+            <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⟳</span>
+            Processing…
+          </>
+        ) : label}
+      </button>
+      {disabledReason && !isProcessing && (
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>{disabledReason}</span>
+      )}
+    </div>
+  );
+}
+
+function IconBtn({ onClick, title, children, disabled }: {
+  onClick: () => void; title?: string; children: React.ReactNode; disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      disabled={disabled}
+      style={{
+        background: "none", border: "1px solid var(--border)", borderRadius: 6,
+        cursor: disabled ? "not-allowed" : "pointer", padding: "3px 6px",
+        color: disabled ? "var(--border)" : "var(--muted)", fontSize: 12,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        opacity: disabled ? 0.4 : 1,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}

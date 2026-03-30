@@ -15,17 +15,32 @@ export function WarmupScreen({ stage, percent, gpuDevice, onSkip }: WarmupScreen
   const isReady = percent >= 100;
 
   return (
-    <div className="w-full rounded-2xl border border-white/10 bg-white/5 p-8 space-y-6">
+    <div style={{
+      width: "100%",
+      border: "1px solid var(--border)",
+      borderRadius: 16,
+      background: "var(--cream)",
+      padding: 28,
+      display: "flex",
+      flexDirection: "column",
+      gap: 20,
+    }}>
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500/30 to-blue-500/30 border border-white/10 flex items-center justify-center">
-          <Brain className="w-7 h-7 text-purple-300" />
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{
+          width: 52, height: 52, borderRadius: 14,
+          background: "var(--accent-light)",
+          border: "1px solid var(--border)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          flexShrink: 0,
+        }}>
+          <Brain size={24} color="var(--accent)" />
         </div>
         <div>
-          <h3 className="font-semibold text-white text-lg">
+          <h3 style={{ fontSize: 15, fontWeight: 600, color: "var(--ink)", marginBottom: 3 }}>
             {isReady ? "AI Engine Ready" : "Loading AI Engine"}
           </h3>
-          <p className="text-sm text-white/50">
+          <p style={{ fontSize: 13, color: "var(--muted)" }}>
             {isReady
               ? "Models cached — will be instant next time"
               : "Downloads once, then works fully offline"}
@@ -37,15 +52,15 @@ export function WarmupScreen({ stage, percent, gpuDevice, onSkip }: WarmupScreen
       {!isReady && <ProgressBar percent={percent} stage={stage} color="orange" />}
 
       {/* Status chips */}
-      <div className="flex flex-wrap gap-3">
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
         <StatusChip
-          icon={<Cpu className="w-3.5 h-3.5" />}
+          icon={<Cpu size={12} />}
           label={gpuDevice === "webgpu" ? "WebGPU Active" : "CPU/WASM Mode"}
           active={!!gpuDevice}
           color={gpuDevice === "webgpu" ? "green" : "blue"}
         />
         <StatusChip
-          icon={isReady ? <WifiOff className="w-3.5 h-3.5" /> : <Wifi className="w-3.5 h-3.5" />}
+          icon={isReady ? <WifiOff size={12} /> : <Wifi size={12} />}
           label={isReady ? "Works Offline Now" : "Downloading models..."}
           active={isReady}
           color="green"
@@ -54,9 +69,20 @@ export function WarmupScreen({ stage, percent, gpuDevice, onSkip }: WarmupScreen
 
       {/* Explanation */}
       {!isReady && (
-        <div className="rounded-xl bg-white/5 border border-white/10 p-4 text-sm text-white/50 space-y-1">
-          <p>⚡ <strong className="text-white/70">Text PDFs convert instantly</strong> without this download.</p>
-          <p>🔍 This AI engine is only needed for <strong className="text-white/70">scanned/image PDFs</strong>.</p>
+        <div style={{
+          padding: "14px 16px",
+          background: "var(--paper)",
+          border: "1px solid var(--border)",
+          borderRadius: 10,
+          fontSize: 13,
+          color: "var(--muted)",
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+          lineHeight: 1.6,
+        }}>
+          <p>⚡ <strong style={{ color: "var(--ink)" }}>Text PDFs convert instantly</strong> without this download.</p>
+          <p>🔍 This AI engine is only needed for <strong style={{ color: "var(--ink)" }}>scanned/image PDFs</strong>.</p>
           <p>💾 Models are cached in your browser — next visit loads in seconds.</p>
         </div>
       )}
@@ -65,7 +91,12 @@ export function WarmupScreen({ stage, percent, gpuDevice, onSkip }: WarmupScreen
       {!isReady && onSkip && (
         <button
           onClick={onSkip}
-          className="text-sm text-white/40 hover:text-white/70 transition-colors underline underline-offset-2"
+          style={{
+            background: "none", border: "none", cursor: "pointer",
+            fontSize: 13, color: "var(--muted)", textDecoration: "underline",
+            textUnderlineOffset: 2, fontFamily: "var(--sans)", padding: 0,
+            textAlign: "left",
+          }}
         >
           Skip AI — I only have text-based PDFs
         </button>
@@ -86,16 +117,18 @@ function StatusChip({
   color: "green" | "blue";
 }) {
   const colors = {
-    green: "bg-green-500/10 border-green-500/30 text-green-300",
-    blue: "bg-blue-500/10 border-blue-500/30 text-blue-300",
+    green: { bg: "var(--accent-light)", border: "1px solid var(--accent)", text: "var(--accent)" },
+    blue: { bg: "#e8f0ff", border: "1px solid #93aaf0", text: "#3b5bdb" },
   };
+  const c = active ? colors[color] : { bg: "var(--cream)", border: "1px solid var(--border)", text: "var(--muted)" };
 
   return (
-    <span
-      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium ${
-        active ? colors[color] : "bg-white/5 border-white/10 text-white/30"
-      }`}
-    >
+    <span style={{
+      display: "flex", alignItems: "center", gap: 5,
+      padding: "4px 12px", borderRadius: 20,
+      background: c.bg, border: c.border, color: c.text,
+      fontSize: 12, fontWeight: 500,
+    }}>
       {icon}
       {label}
     </span>
