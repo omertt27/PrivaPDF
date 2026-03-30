@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useConverter } from "@/hooks/useConverter";
 import { DropZone } from "@/components/DropZone";
 import { ProgressBar } from "@/components/ProgressBar";
@@ -31,6 +31,8 @@ export default function ConvertPage() {
     error,
     remainingConversions,
     isPro,
+    plan,
+    planMeta,
     workerReady,
     workerLoading,
     workerProgress,
@@ -50,13 +52,6 @@ export default function ConvertPage() {
     reset,
   } = useConverter();
 
-  const handleFile = useCallback(
-    (file: File) => {
-      convertFile(file);
-    },
-    [convertFile]
-  );
-
   const isConverting = ["parsing", "analyzing", "building"].includes(status);
   const isBatchRunning = isConverting && activeTab === "batch";
 
@@ -64,6 +59,7 @@ export default function ConvertPage() {
   const formatName =
     outputFormat === "docx" ? "Word (.docx)" :
     outputFormat === "xlsx" ? "Excel (.xlsx)" :
+    outputFormat === "pptx" ? "PowerPoint (.pptx)" :
     "Text (.txt)";
 
   return (
@@ -79,6 +75,7 @@ export default function ConvertPage() {
         </Link>
 
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <Link href="/tools" style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>PDF Tools</Link>
           {/* GPU badge */}
           {workerReady && (
             <span style={{
@@ -96,10 +93,10 @@ export default function ConvertPage() {
             </span>
           ) : (
             <span style={{
-              fontSize: 12, color: "var(--accent)", background: "var(--accent-light)",
+              fontSize: 12, color: planMeta.color, background: "var(--accent-light)",
               padding: "4px 12px", borderRadius: 20, fontWeight: 500,
             }}>
-              Pro — Unlimited
+              {planMeta.badge}
             </span>
           )}
         </div>
@@ -213,7 +210,7 @@ export default function ConvertPage() {
               {/* IDLE */}
               {status === "idle" && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
-                  <DropZone onFile={handleFile} disabled={false} />
+                  <DropZone onFile={convertFile} disabled={false} />
 
                   {/* Options row */}
                   <div style={{

@@ -81,7 +81,7 @@ export async function mergePDFs(
 
   onProgress?.(92, "Assembling merged PDF...");
   const pdfBytes = buildImagePDF(pageImages);
-  const blob = new Blob([pdfBytes], { type: "application/pdf" });
+  const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
   triggerDownload(blob, `${outputName}.pdf`);
   onProgress?.(100, "Done!");
 }
@@ -124,9 +124,9 @@ export async function splitPDF(
     const ctx = canvas.getContext("2d")!;
     await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
     const pdfBytes = buildImagePDF([{ width: viewport.width, height: viewport.height, dataUrl }]);
-    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
 
     const fileName = `${baseName}_page${pageNum}.pdf`;
     triggerDownload(blob, fileName);
@@ -176,7 +176,7 @@ export async function compressPDF(
 
   onProgress?.(92, "Writing compressed PDF...");
   const pdfBytes = buildImagePDF(pageImages);
-  const blob = new Blob([pdfBytes], { type: "application/pdf" });
+  const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
 
   const baseName = file.name.replace(/\.pdf$/i, "");
   const origKB = Math.round(file.size / 1024);
@@ -240,7 +240,7 @@ export async function unlockPDF(
 
   onProgress?.(92, "Writing unlocked PDF...");
   const pdfBytes = buildImagePDF(pageImages);
-  const blob = new Blob([pdfBytes], { type: "application/pdf" });
+  const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
 
   const baseName = file.name.replace(/\.pdf$/i, "");
   triggerDownload(blob, `${baseName}_unlocked.pdf`);

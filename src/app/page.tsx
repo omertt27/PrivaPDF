@@ -1,5 +1,26 @@
 import Link from "next/link";
 
+/* ─── LemonSqueezy helpers ───────────────────────────────────────────────────
+   LemonSqueezy checkout links accept:
+     ?checkout[success_url]=  — where to redirect after payment (must be absolute)
+     ?checkout[cancel_url]=   — where to redirect on cancel
+   After a successful purchase LS appends ?order_id=... to the success_url.
+   We embed ?plan= in the success_url so /success knows which tier was purchased.
+
+   Replace the lemon.squeezy.com/checkout/buy/... slugs with your real variant IDs.
+   Find them in LemonSqueezy → Products → your product → Variants → Share link.
+───────────────────────────────────────────────────────────────────────────── */
+const ORIGIN = process.env.NEXT_PUBLIC_URL ?? "https://privapdf.com";
+const mkSuccess = (plan: string) => `${ORIGIN}/success?plan=${plan}`;
+const mkCancel  = () => `${ORIGIN}/#pricing`;
+
+const LS = {
+  individual: `https://privapdf.lemonsqueezy.com/checkout/buy/your_individual_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("individual"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
+  proMonthly: `https://privapdf.lemonsqueezy.com/checkout/buy/your_pro_monthly_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("pro"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
+  proYearly:  `https://privapdf.lemonsqueezy.com/checkout/buy/your_pro_yearly_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("pro"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
+  legal:      `https://privapdf.lemonsqueezy.com/checkout/buy/your_legal_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("legal"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
+};
+
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
 const compareRows = [
   { feature: "Files stay on your device",   us: "✓ Always",      small: "✗ Uploaded", ilove: "✗ Uploaded", adobe: "✗ Uploaded" },
@@ -7,9 +28,12 @@ const compareRows = [
   { feature: "No account required",         us: "✓ Never",       small: "✗ Required", ilove: "✗ Required", adobe: "✗ Required" },
   { feature: "PDF → Word (.docx)",          us: "✓ Yes",         small: "✓ Yes",      ilove: "✓ Yes",      adobe: "✓ Yes" },
   { feature: "PDF → Excel (.xlsx)",         us: "✓ Pro",         small: "✓ Pro",      ilove: "✓ Pro",      adobe: "✓ Paid" },
+  { feature: "PDF → PowerPoint (.pptx)",    us: "✓ Pro",         small: "✓ Pro",      ilove: "✓ Pro",      adobe: "✓ Paid" },
+  { feature: "Merge / Split / Compress",    us: "✓ Yes",         small: "✓ Yes",      ilove: "✓ Yes",      adobe: "✓ Paid" },
+  { feature: "Unlock password PDFs",        us: "✓ Local only",  small: "✗ Uploads",  ilove: "✗ Uploads",  adobe: "✗ Uploads" },
   { feature: "Table reconstruction",        us: "✓ AI-grade",    small: "~ Basic",    ilove: "~ Basic",    adobe: "~ Basic" },
   { feature: "Batch conversion",            us: "✓ Pro",         small: "✓ Pro",      ilove: "✓ Pro",      adobe: "✓ Paid" },
-  { feature: "One-time purchase option",    us: "✓ $19 forever", small: "✗ Sub only", ilove: "✗ Sub only", adobe: "✗ Sub only" },
+  { feature: "One-time purchase option",    us: "✓ $19 individual", small: "✗ Sub only", ilove: "✗ Sub only", adobe: "✗ Sub only" },
 ];
 
 const faqs = [
@@ -31,11 +55,23 @@ const faqs = [
   },
   {
     q: "Is the $19 really one-time, forever?",
-    a: "Yes. Pay once, unlock unlimited conversions permanently on that browser. If you clear browser data you can re-enter your email to restore access.",
+    a: "Yes. The Individual plan is a one-time purchase — pay once, get unlimited conversions on that browser forever. No recurring fees, no subscription required.",
+  },
+  {
+    q: "What's the difference between Pro and Legal?",
+    a: "Pro ($9/mo or $99/yr) adds unlimited conversions, AI OCR, Excel/PowerPoint export, and batch mode. Legal ($29/mo) adds PDF redaction and advanced OCR for scanned legal documents — built for attorneys and compliance teams.",
   },
   {
     q: "Can I use this for confidential documents?",
     a: "Absolutely — that's the primary use case. Legal contracts, medical records, financial reports. Nothing leaves your device, so your confidentiality obligations are met by default.",
+  },
+  {
+    q: "How does PDF Merge work locally?",
+    a: "PrivaPDF renders each PDF page to a canvas element using PDF.js, then assembles them into a new PDF — all inside your browser. No server, no third-party library, no upload.",
+  },
+  {
+    q: "Can I unlock a password-protected PDF without uploading it?",
+    a: "Yes. Enter the password in the browser — it decrypts the PDF locally using PDF.js. Your password and your file never leave this tab.",
   },
 ];
 
@@ -53,11 +89,18 @@ export default function Home() {
           Priva<span style={{ color: "var(--accent)" }}>PDF</span>
         </div>
         <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          {[["#how", "How it works"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
+          {[["#how", "How it works"], ["#tools", "PDF Tools"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
             <a key={href} href={href} style={{ fontSize: 14, color: "var(--muted)", textDecoration: "none", fontWeight: 400 }}>
               {label}
             </a>
           ))}
+          <Link href="/tools" style={{
+            background: "var(--cream)", color: "var(--ink)", border: "1px solid var(--border)",
+            padding: "9px 20px", borderRadius: 6, fontWeight: 500, fontSize: 13,
+            textDecoration: "none",
+          }}>
+            PDF Tools
+          </Link>
           <Link href="/convert" style={{
             background: "var(--ink)", color: "var(--paper)",
             padding: "9px 20px", borderRadius: 6, fontWeight: 500, fontSize: 13,
@@ -102,7 +145,7 @@ export default function Home() {
             maxWidth: 440, marginBottom: 40, fontWeight: 300,
             animationDelay: "0.3s",
           }}>
-            Convert PDF to Word in seconds — no uploads, no accounts, no servers.
+            Convert PDF to Word, Excel, PowerPoint — plus merge, split, compress and unlock.
             Your documents are processed{" "}
             <strong style={{ color: "var(--ink)", fontWeight: 500 }}>entirely in your browser</strong>{" "}
             using local AI.
@@ -116,19 +159,20 @@ export default function Home() {
             }}>
               Convert a PDF free →
             </Link>
-            <a href="#how" style={{
-              fontSize: 14, color: "var(--muted)", textDecoration: "none",
-              borderBottom: "1px solid var(--border)", paddingBottom: 1,
+            <Link href="/tools" style={{
+              background: "var(--cream)", color: "var(--ink)", border: "1px solid var(--border)",
+              padding: "14px 28px", borderRadius: 8, fontSize: 15, fontWeight: 500,
+              textDecoration: "none", display: "inline-block",
             }}>
-              See how it works
-            </a>
+              PDF Tools →
+            </Link>
           </div>
 
           <div className="animate-fade-up" style={{
             marginTop: 48, paddingTop: 32, borderTop: "1px solid var(--border)",
             display: "flex", gap: 32, animationDelay: "0.5s",
           }}>
-            {[["0", "bytes sent to servers"], ["2s", "avg. conversion time"], ["3", "output formats"]].map(([num, label]) => (
+            {[["0", "bytes sent to servers"], ["2s", "avg. conversion time"], ["4", "output formats"], ["4", "PDF tools"]].map(([num, label]) => (
               <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontFamily: "var(--serif)", fontSize: 28 }}>{num}</span>
                 <span style={{ fontSize: 12, color: "var(--muted)" }}>{label}</span>
@@ -160,7 +204,7 @@ export default function Home() {
             </div>
             <div style={{ fontFamily: "var(--serif)", fontSize: 22, marginBottom: 8 }}>Drop your PDF here</div>
             <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 24, lineHeight: 1.5 }}>
-              PDF → Word, Excel, or plain text.<br />Your file never leaves this tab.
+              PDF → Word, Excel, PowerPoint or Text.<br />Your file never leaves this tab.
             </p>
             <Link href="/convert" style={{
               display: "inline-block", background: "var(--accent)", color: "#fff",
@@ -209,7 +253,7 @@ export default function Home() {
           {[
             { n: "01", title: "Drop your PDF", badge: "100% local", desc: "Drag any PDF into the converter. Your file is read directly by your browser — it never touches our servers or any third party." },
             { n: "02", title: "Browser converts it", badge: "WebGPU powered", desc: "Text PDFs convert in ~2 seconds. Scanned documents use on-device AI — downloaded once, cached forever, works offline." },
-            { n: "03", title: "Download your file", badge: "Word · Excel · Text", desc: "Choose Word (.docx), Excel (.xlsx), or plain text output. Tables, headers, and formatting are preserved with professional accuracy." },
+            { n: "03", title: "Download your file", badge: "Word · Excel · PPT · Text", desc: "Choose Word (.docx), Excel (.xlsx), PowerPoint (.pptx), or plain text output. Tables, headers, and formatting are preserved with professional accuracy." },
           ].map((step, i) => (
             <div key={i} style={{
               padding: "40px 36px",
@@ -225,6 +269,85 @@ export default function Home() {
               }}>{step.badge}</span>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── PDF TOOLS SECTION ── */}
+      <section id="tools" style={{ padding: "96px 80px", background: "var(--cream)", borderTop: "1px solid var(--border)" }}>
+        <div style={{
+          fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
+          color: "var(--accent)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8,
+        }}>
+          <span style={{ width: 20, height: 1, background: "var(--accent)", display: "inline-block" }} />
+          PDF Tools — all browser-side
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 24 }}>
+          <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px,4vw,48px)", lineHeight: 1.1, letterSpacing: -1, maxWidth: 520 }}>
+            Merge. Split. Compress. Unlock.<br />
+            <em style={{ fontStyle: "italic", color: "var(--accent)" }}>None of it leaves your browser.</em>
+          </h2>
+          <Link href="/tools" style={{
+            background: "var(--ink)", color: "var(--paper)",
+            padding: "14px 28px", borderRadius: 8, fontSize: 15, fontWeight: 500,
+            textDecoration: "none", whiteSpace: "nowrap",
+          }}>
+            Open PDF Tools →
+          </Link>
+        </div>
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
+          gap: 0, border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "var(--paper)",
+        }}>
+          {[
+            {
+              icon: "⊕",
+              title: "Merge PDFs",
+              desc: "Drag in any number of PDFs, reorder them with arrows, and download a single merged file. No limit on pages or file count.",
+              badge: "Free",
+              badgeColor: "var(--accent)",
+            },
+            {
+              icon: "✂",
+              title: "Split PDF",
+              desc: "Extract individual pages or ranges (e.g. 1,3,5–8) as separate PDFs. Perfect for sharing just the pages you need.",
+              badge: "Free",
+              badgeColor: "var(--accent)",
+            },
+            {
+              icon: "⇩",
+              title: "Compress PDF",
+              desc: "Re-render at lower quality to shrink file size by 40–75%. Adjust the slider to balance quality vs. size.",
+              badge: "Free",
+              badgeColor: "var(--accent)",
+            },
+            {
+              icon: "🔓",
+              title: "Unlock PDF",
+              desc: "Enter the password to remove protection. The password is used only inside this browser tab — never transmitted anywhere.",
+              badge: "Free",
+              badgeColor: "var(--accent)",
+            },
+          ].map((tool, i) => (
+            <div key={i} style={{
+              padding: "36px 40px",
+              borderRight: i % 2 === 0 ? "1px solid var(--border)" : "none",
+              borderBottom: i < 2 ? "1px solid var(--border)" : "none",
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <span style={{ fontSize: 28, lineHeight: 1 }}>{tool.icon}</span>
+                <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--ink)" }}>{tool.title}</h3>
+                <span style={{
+                  marginLeft: "auto", fontSize: 11, fontWeight: 500,
+                  color: tool.badgeColor, background: "var(--accent-light)",
+                  padding: "3px 10px", borderRadius: 20,
+                }}>{tool.badge}</span>
+              </div>
+              <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.65 }}>{tool.desc}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 20, textAlign: "center", fontSize: 13, color: "var(--muted)" }}>
+          All tools run 100% in your browser · Zero uploads · No account required
         </div>
       </section>
 
@@ -410,56 +533,163 @@ export default function Home() {
           <span style={{ width: 20, height: 1, background: "var(--accent)", display: "inline-block" }} />
           Pricing
         </div>
-        <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px,4vw,48px)", lineHeight: 1.1, letterSpacing: -1, marginBottom: 48, maxWidth: 560 }}>
-          Start free. Pay once.
-        </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, maxWidth: 800 }}>
-          {/* Free */}
-          <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 40, background: "var(--paper)" }}>
-            <div style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--muted)", marginBottom: 16 }}>Free</div>
-            <div style={{ fontFamily: "var(--serif)", fontSize: 52, lineHeight: 1, marginBottom: 4 }}>$0</div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 28 }}>forever, no card needed</div>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-              {["3 conversions per day", "Text PDF → Word (instant)", "Tables & formatting preserved", "Works offline after first visit"].map((f) => (
-                <li key={f} style={{ fontSize: 14, color: "var(--muted)", display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ width: 16, height: 16, background: "var(--accent-light)", borderRadius: "50%", flexShrink: 0, display: "inline-block" }} />
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 16 }}>
+          <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(28px,4vw,48px)", lineHeight: 1.1, letterSpacing: -1, maxWidth: 480 }}>
+            Start free.<br />Scale when you&apos;re ready.
+          </h2>
+          <p style={{ fontSize: 14, color: "var(--muted)", maxWidth: 340, lineHeight: 1.6 }}>
+            Every plan processes files entirely in your browser — your documents never touch our servers.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+
+          {/* ── FREE ── */}
+          <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 32, background: "var(--paper)", display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--muted)", marginBottom: 20 }}>Free</div>
+            <div style={{ fontFamily: "var(--serif)", fontSize: 44, lineHeight: 1, marginBottom: 4 }}>$0</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 24 }}>forever, no card needed</div>
+            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, flex: 1 }}>
+              {[
+                "3 conversions / day (PDF → Word)",
+                "Tables & formatting preserved",
+                "Merge, split, compress (3 uses/day)",
+                "Unlock password PDFs",
+                "Works offline after first visit",
+              ].map((f) => (
+                <li key={f} style={{ fontSize: 13, color: "var(--muted)", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <span style={{ width: 14, height: 14, background: "var(--accent-light)", borderRadius: "50%", flexShrink: 0, marginTop: 2, display: "inline-block" }} />
                   {f}
                 </li>
               ))}
             </ul>
             <Link href="/convert" style={{
-              display: "block", width: "100%", padding: 14, borderRadius: 8, fontSize: 14,
+              display: "block", padding: "12px 0", borderRadius: 8, fontSize: 13,
               fontWeight: 500, textAlign: "center", textDecoration: "none",
-              background: "var(--cream)", color: "var(--ink)",
+              background: "var(--cream)", color: "var(--ink)", border: "1px solid var(--border)",
             }}>
-              Start converting free
+              Start free
             </Link>
           </div>
-          {/* Pro */}
-          <div style={{ border: "1px solid var(--accent)", borderRadius: 16, padding: 40, background: "var(--ink)", color: "var(--paper)" }}>
-            <div style={{ fontSize: 12, fontWeight: 500, letterSpacing: 1.5, textTransform: "uppercase", color: "#8db89a", marginBottom: 16 }}>Pro — One-time</div>
-            <div style={{ fontFamily: "var(--serif)", fontSize: 52, lineHeight: 1, marginBottom: 4 }}>$19</div>
-            <div style={{ fontSize: 13, color: "#8db89a", marginBottom: 28 }}>pay once, use forever</div>
-            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-              {["Unlimited conversions", "AI OCR for scanned PDFs", "Export to Excel (.xlsx)", "Batch convert multiple files", "Page range selection", "Early access to new formats (PDF→PPT)"].map((f) => (
-                <li key={f} style={{ fontSize: 14, color: "#c8d8cc", display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ width: 16, height: 16, background: "#2d5a3d", borderRadius: "50%", flexShrink: 0, display: "inline-block" }} />
+
+          {/* ── INDIVIDUAL ── */}
+          <div style={{ border: "2px solid var(--accent)", borderRadius: 16, padding: 32, background: "var(--paper)", display: "flex", flexDirection: "column", position: "relative" }}>
+            <div style={{
+              position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
+              background: "var(--accent)", color: "#fff",
+              fontSize: 10, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase",
+              padding: "4px 14px", borderRadius: 20,
+            }}>Most Popular</div>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--accent)", marginBottom: 20 }}>Individual</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 4 }}>
+              <span style={{ fontFamily: "var(--serif)", fontSize: 44, lineHeight: 1 }}>$19</span>
+              <span style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>one-time</span>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 24 }}>pay once, yours forever</div>
+            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, flex: 1 }}>
+              {[
+                "Unlimited conversions",
+                "AI OCR for scanned PDFs",
+                "Excel + PowerPoint export",
+                "Batch convert",
+                "Page range selection",
+              ].map((f) => (
+                <li key={f} style={{ fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <span style={{ color: "var(--accent)", flexShrink: 0, marginTop: 1, fontSize: 14, lineHeight: 1 }}>✓</span>
                   {f}
                 </li>
               ))}
             </ul>
-            <a href="https://buy.stripe.com/your_link_here" style={{
-              display: "block", width: "100%", padding: 14, borderRadius: 8,
-              fontSize: 14, fontWeight: 500, textAlign: "center",
-              background: "#fff", color: "var(--ink)", textDecoration: "none",
+            <a href={LS.individual} style={{
+              display: "block", padding: "12px 0", borderRadius: 8,
+              fontSize: 13, fontWeight: 600, textAlign: "center",
+              background: "var(--ink)", color: "var(--paper)", textDecoration: "none",
             }}>
-              Unlock forever — $19
+              Buy once — $19
             </a>
-            <div style={{ marginTop: 12, textAlign: "center", fontSize: 12, color: "#8db89a" }}>
-              or $5/month · cancel anytime
+          </div>
+
+          {/* ── PRO ── */}
+          <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 32, background: "var(--ink)", color: "var(--paper)", display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "#8db89a", marginBottom: 20 }}>Pro</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 4 }}>
+              <span style={{ fontFamily: "var(--serif)", fontSize: 44, lineHeight: 1 }}>$9</span>
+              <span style={{ fontSize: 13, color: "#8db89a", marginBottom: 4 }}>/month</span>
+            </div>
+            <div style={{ fontSize: 12, color: "#8db89a", marginBottom: 24 }}>or $99/year · save 8%</div>
+            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, flex: 1 }}>
+              {[
+                "Everything in Individual",
+                "Always on latest features",
+                "Priority support",
+                "License restore by email",
+                "Early feature previews",
+              ].map((f) => (
+                <li key={f} style={{ fontSize: 13, color: "#c8d8cc", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <span style={{ color: "#8db89a", flexShrink: 0, marginTop: 1, fontSize: 14, lineHeight: 1 }}>✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <a href={LS.proMonthly} style={{
+                display: "block", padding: "12px 0", borderRadius: 8,
+                fontSize: 13, fontWeight: 600, textAlign: "center",
+                background: "#fff", color: "var(--ink)", textDecoration: "none",
+              }}>
+                Start Pro — $9/mo
+              </a>
+              <a href={LS.proYearly} style={{
+                display: "block", padding: "11px 0", borderRadius: 8,
+                fontSize: 12, fontWeight: 500, textAlign: "center",
+                background: "transparent", color: "#8db89a", textDecoration: "none",
+                border: "1px solid rgba(141,184,154,0.3)",
+              }}>
+                Annual — $99/yr
+              </a>
             </div>
           </div>
+
+          {/* ── LEGAL ── */}
+          <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 32, background: "var(--cream)", display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--muted)", marginBottom: 20 }}>Legal</div>
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 4, marginBottom: 4 }}>
+              <span style={{ fontFamily: "var(--serif)", fontSize: 44, lineHeight: 1 }}>$29</span>
+              <span style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>/month</span>
+            </div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 24 }}>for attorneys &amp; compliance teams</div>
+            <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, flex: 1 }}>
+              {[
+                "Everything in Pro",
+                "PDF redaction (local)",
+                "Advanced OCR for legal docs",
+                "Privilege log export",
+                "Team-ready (coming soon)",
+              ].map((f) => (
+                <li key={f} style={{ fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                  <span style={{ color: "var(--accent)", flexShrink: 0, marginTop: 1, fontSize: 14, lineHeight: 1 }}>✓</span>
+                  {f}
+                </li>
+              ))}
+            </ul>
+            <a href={LS.legal} style={{
+              display: "block", padding: "12px 0", borderRadius: 8,
+              fontSize: 13, fontWeight: 600, textAlign: "center",
+              background: "var(--ink)", color: "var(--paper)", textDecoration: "none",
+            }}>
+              Start Legal — $29/mo
+            </a>
+            <div style={{ marginTop: 10, textAlign: "center", fontSize: 11, color: "var(--muted)" }}>
+              For firms &amp; teams — contact us for volume pricing
+            </div>
+          </div>
+
         </div>
+
+        {/* Money-back note */}
+        <p style={{ marginTop: 24, textAlign: "center", fontSize: 13, color: "var(--muted)" }}>
+          All plans · Secure checkout via LemonSqueezy (Stripe-powered) · 14-day refund policy · Files never leave your device
+        </p>
       </section>
 
       {/* ── FAQ ── */}
@@ -500,7 +730,7 @@ export default function Home() {
           Priva<span style={{ color: "var(--accent)" }}>PDF</span>
         </div>
         <div style={{ display: "flex", gap: 24 }}>
-          {[["#how", "How it works"], ["#pricing", "Pricing"], ["#faq", "FAQ"], ["/convert", "Convert"]].map(([href, label]) => (
+          {[["#how", "How it works"], ["#tools", "PDF Tools"], ["#pricing", "Pricing"], ["#faq", "FAQ"], ["/convert", "Convert"], ["/tools", "Tools"]].map(([href, label]) => (
             <a key={href} href={href} style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>{label}</a>
           ))}
         </div>

@@ -9,7 +9,7 @@ import { buildDocx, parseTextBlocks, type ProcessedPage, type TextBlock } from "
 import { buildXlsx } from "@/lib/xlsx-builder";
 import { buildTxt } from "@/lib/txt-builder";
 import { buildPptx } from "@/lib/pptx-builder";
-import { consumeConversion, isProUser, getRemainingConversions } from "@/lib/usage-gate";
+import { consumeConversion, isProUser, getPlan, getRemainingConversions, PLAN_META, type PlanTier } from "@/lib/usage-gate";
 import { useConverterWorker } from "./useConverterWorker";
 
 export type OutputFormat = "docx" | "xlsx" | "txt" | "pptx";
@@ -43,6 +43,8 @@ export interface UseConverterReturn {
   error: string | null;
   remainingConversions: number;
   isPro: boolean;
+  plan: PlanTier;
+  planMeta: { label: string; color: string; badge: string };
   workerReady: boolean;
   workerLoading: boolean;
   workerProgress: { stage: string; percent: number };
@@ -204,8 +206,8 @@ export function useConverter(): UseConverterReturn {
 
         // ── Step 3: Build output file ──────────────────────────────
         setStatus("building");
-        const fmtLabel = outputFormat === "docx" ? "Word" : outputFormat === "xlsx" ? "Excel" : outputFormat === "pptx" ? "PowerPoint" : "Text";
-        setP(82, `Building ${fmtLabel} document...`);
+        const FORMAT_LABELS: Record<OutputFormat, string> = { docx: "Word", xlsx: "Excel", pptx: "PowerPoint", txt: "Text" };
+        setP(82, `Building ${FORMAT_LABELS[outputFormat]} document...`);
 
         const baseName = file.name.replace(/\.pdf$/i, "");
         await dispatchBuild(outputFormat, processedPages, baseName);
@@ -309,6 +311,8 @@ export function useConverter(): UseConverterReturn {
     error,
     remainingConversions: remaining,
     isPro: isProUser(),
+    plan: getPlan(),
+    planMeta: PLAN_META[getPlan()],
     workerReady: modelsReady,
     workerLoading: workerStatus === "loading_models",
     workerProgress,
