@@ -9,6 +9,7 @@ const CACHE_NAME = "privapdf-v1";
 const APP_SHELL = [
   "/",
   "/convert",
+  "/tools",
   "/manifest.json",
 ];
 

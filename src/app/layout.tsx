@@ -17,14 +17,49 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "PrivaPDF — PDF Converter That Never Sees Your Files",
+  metadataBase: new URL("https://privapdf.com"),
+  title: {
+    default: "PrivaPDF — PDF Converter That Never Uploads Your Files",
+    template: "%s | PrivaPDF",
+  },
   description:
-    "Convert PDF to Word in seconds. No uploads, no accounts, no servers. Works offline. Your documents are processed entirely in your browser using local AI.",
-  keywords: "PDF to Word, PDF converter, privacy, local, offline, no upload, offline pdf converter, pdf to word without internet",
+    "Convert PDF to Word, Excel, or PowerPoint without uploading anything. Runs entirely in your browser using local AI. Zero servers, zero accounts, works offline.",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "PrivaPDF — PDF Converter That Never Sees Your Files",
-    description: "Convert PDF to Word in seconds. Zero uploads. Works offline. 100% private.",
+    title: "PrivaPDF — PDF Converter That Never Uploads Your Files",
+    description:
+      "Zero uploads. Zero servers. Works offline. Your files are processed entirely in your browser — not ours.",
     type: "website",
+    url: "https://privapdf.com",
+    siteName: "PrivaPDF",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "PrivaPDF — Convert PDFs without uploading them",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PrivaPDF — PDF Converter That Never Uploads Your Files",
+    description:
+      "Zero uploads. Runs in your browser. Works offline. Your files never leave your device.",
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-snippet": -1,
+      "max-image-preview": "large",
+      "max-video-preview": -1,
+    },
   },
   manifest: "/manifest.json",
   other: {

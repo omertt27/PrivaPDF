@@ -1,7 +1,7 @@
 {
-  "name": "PrivaPDF",
+  "name": "PrivaPDF — PDF Converter",
   "short_name": "PrivaPDF",
-  "description": "PDF converter that never sees your files. Works offline.",
+  "description": "Convert PDF to Word, Excel, and PowerPoint without uploading anything. Runs entirely in your browser. Works offline.",
   "start_url": "/convert",
   "display": "standalone",
   "background_color": "#faf8f4",
@@ -17,7 +17,12 @@
     {
       "name": "Convert PDF",
       "url": "/convert",
-      "description": "Convert a PDF to Word"
+      "description": "Convert PDF to Word, Excel, or PowerPoint"
+    },
+    {
+      "name": "PDF Tools",
+      "url": "/tools",
+      "description": "Merge, split, compress and unlock PDFs"
     }
   ]
 }

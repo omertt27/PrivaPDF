@@ -1,4 +1,18 @@
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "PDF to Word Converter — No Upload Required",
+  description:
+    "Convert PDF to Word, Excel, and PowerPoint entirely in your browser. No uploads, no servers, no account. Works offline. Free to start.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "PrivaPDF — PDF Converter That Never Uploads Your Files",
+    description:
+      "Convert PDF to Word, Excel, or PowerPoint without uploading anything. Runs entirely in your browser using local AI.",
+    url: "https://privapdf.com",
+  },
+};
 
 /* ─── LemonSqueezy helpers ───────────────────────────────────────────────────
    LemonSqueezy checkout links accept:
@@ -22,24 +36,32 @@ const LS = {
 };
 
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
+// invertedRows: rows where ✗ is GOOD for PrivaPDF (col 0) and ✓ is BAD for competitors
+const INVERTED_ROWS = new Set(["Company can access your files?"]);
+
 const compareRows = [
-  { feature: "Files stay on your device",   us: "✓ Always",      small: "✗ Uploaded", ilove: "✗ Uploaded", adobe: "✗ Uploaded" },
-  { feature: "Works offline",               us: "✓ Yes",         small: "✗ No",       ilove: "✗ No",       adobe: "✗ No" },
-  { feature: "No account required",         us: "✓ Never",       small: "✗ Required", ilove: "✗ Required", adobe: "✗ Required" },
-  { feature: "PDF → Word (.docx)",          us: "✓ Yes",         small: "✓ Yes",      ilove: "✓ Yes",      adobe: "✓ Yes" },
-  { feature: "PDF → Excel (.xlsx)",         us: "✓ Pro",         small: "✓ Pro",      ilove: "✓ Pro",      adobe: "✓ Paid" },
-  { feature: "PDF → PowerPoint (.pptx)",    us: "✓ Pro",         small: "✓ Pro",      ilove: "✓ Pro",      adobe: "✓ Paid" },
-  { feature: "Merge / Split / Compress",    us: "✓ Yes",         small: "✓ Yes",      ilove: "✓ Yes",      adobe: "✓ Paid" },
-  { feature: "Unlock password PDFs",        us: "✓ Local only",  small: "✗ Uploads",  ilove: "✗ Uploads",  adobe: "✗ Uploads" },
-  { feature: "Table reconstruction",        us: "✓ AI-grade",    small: "~ Basic",    ilove: "~ Basic",    adobe: "~ Basic" },
-  { feature: "Batch conversion",            us: "✓ Pro",         small: "✓ Pro",      ilove: "✓ Pro",      adobe: "✓ Paid" },
-  { feature: "One-time purchase option",    us: "✓ $19 individual", small: "✗ Sub only", ilove: "✗ Sub only", adobe: "✗ Sub only" },
+  { feature: "Files stay on your device",       us: "✓ Always",         small: "✗ Uploaded",  ilove: "✗ Uploaded",  adobe: "✗ Uploaded" },
+  { feature: "Company can access your files?",  us: "✗ Never — impossible", small: "✓ Yes, by policy", ilove: "✓ Yes, by policy", adobe: "✓ Yes, by policy" },
+  { feature: "Works offline",                   us: "✓ Yes",            small: "✗ No",        ilove: "✗ No",        adobe: "✗ No" },
+  { feature: "No account required",             us: "✓ Never",          small: "✗ Required",  ilove: "✗ Required",  adobe: "✗ Required" },
+  { feature: "PDF → Word (.docx)",              us: "✓ Yes",            small: "✓ Yes",       ilove: "✓ Yes",       adobe: "✓ Yes" },
+  { feature: "PDF → Excel (.xlsx)",             us: "✓ Pro",            small: "✓ Pro",       ilove: "✓ Pro",       adobe: "✓ Paid" },
+  { feature: "PDF → PowerPoint (.pptx)",        us: "✓ Pro",            small: "✓ Pro",       ilove: "✓ Pro",       adobe: "✓ Paid" },
+  { feature: "Merge / Split / Compress",        us: "✓ Yes",            small: "✓ Yes",       ilove: "✓ Yes",       adobe: "✓ Paid" },
+  { feature: "Unlock password PDFs",            us: "✓ Local only",     small: "✗ Uploads",   ilove: "✗ Uploads",   adobe: "✗ Uploads" },
+  { feature: "Table reconstruction",            us: "✓ AI-grade",       small: "~ Basic",     ilove: "~ Basic",     adobe: "~ Basic" },
+  { feature: "Batch conversion",                us: "✓ Pro",            small: "✓ Pro",       ilove: "✓ Pro",       adobe: "✓ Paid" },
+  { feature: "One-time purchase option",        us: "✓ $19 individual", small: "✗ Sub only",  ilove: "✗ Sub only",  adobe: "✗ Sub only" },
 ];
 
 const faqs = [
   {
     q: "Does my file actually stay on my device?",
-    a: "Yes — completely. When you drop a PDF, your browser reads it locally using PDF.js. No byte of your document travels over the network. You can verify this by opening DevTools → Network tab while converting.",
+    a: "Yes — completely. When you drop a PDF, your browser reads it locally using PDF.js. No byte of your document travels over the network. You can verify this yourself: open DevTools → Network tab while converting. You'll see zero outbound file requests.",
+  },
+  {
+    q: "Why should I trust this more than other tools?",
+    a: "Because the privacy guarantee is architectural, not a policy promise. Smallpdf and Adobe have to upload your file to their servers to process it — their servers do the work. PrivaPDF runs the conversion engine inside your browser tab. There is no server that could receive your file even if we wanted to. Open DevTools → Network → convert a PDF. Count the outbound requests. It's zero.",
   },
   {
     q: "What's the AI download for?",
@@ -55,15 +77,15 @@ const faqs = [
   },
   {
     q: "Is the $19 really one-time, forever?",
-    a: "Yes. The Individual plan is a one-time purchase — pay once, get unlimited conversions on that browser forever. No recurring fees, no subscription required.",
+    a: "Yes. The Individual plan is a one-time purchase — pay once, get unlimited conversions on that browser forever. No recurring fees, no subscription traps.",
   },
   {
     q: "What's the difference between Pro and Legal?",
-    a: "Pro ($9/mo or $99/yr) adds unlimited conversions, AI OCR, Excel/PowerPoint export, and batch mode. Legal ($29/mo) adds PDF redaction and advanced OCR for scanned legal documents — built for attorneys and compliance teams.",
+    a: "Pro ($9/mo or $99/yr) adds unlimited conversions, AI OCR, Excel/PowerPoint export, and batch mode. Legal ($29/mo) adds PDF redaction and advanced OCR tuned for scanned legal documents — built for attorneys and compliance teams.",
   },
   {
     q: "Can I use this for confidential documents?",
-    a: "Absolutely — that's the primary use case. Legal contracts, medical records, financial reports. Nothing leaves your device, so your confidentiality obligations are met by default.",
+    a: "Absolutely — that's the primary use case. Legal contracts, medical records, financial reports. Nothing leaves your device, so your confidentiality obligations are met by design, not policy.",
   },
   {
     q: "How does PDF Merge work locally?",
@@ -76,9 +98,53 @@ const faqs = [
 ];
 
 /* ─── Page ──────────────────────────────────────────────────────────────────── */
+
+const softwareAppSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "PrivaPDF",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Web",
+  "offers": [
+    { "@type": "Offer", "price": "0", "priceCurrency": "USD", "name": "Free" },
+    { "@type": "Offer", "price": "19", "priceCurrency": "USD", "name": "Individual" },
+    { "@type": "Offer", "price": "9", "priceCurrency": "USD", "name": "Pro", "billingIncrement": "P1M" },
+  ],
+  "description": "PDF converter that runs entirely in your browser. No uploads, no servers, works offline.",
+  "url": "https://privapdf.com",
+  "featureList": [
+    "PDF to Word conversion",
+    "PDF to Excel conversion",
+    "PDF to PowerPoint conversion",
+    "PDF merge, split, compress, unlock",
+    "Works offline — no internet required",
+    "AI OCR for scanned PDFs",
+  ],
+};
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map((f) => ({
+    "@type": "Question",
+    "name": f.q,
+    "acceptedAnswer": { "@type": "Answer", "text": f.a },
+  })),
+};
+
 export default function Home() {
   return (
     <>
+      {/* ── JSON-LD structured data ── */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareAppSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+
       {/* ── NAV ── */}
       <nav style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -127,7 +193,7 @@ export default function Home() {
             animationDelay: "0.1s",
           }}>
             <span style={{ width: 24, height: 1, background: "var(--accent)", display: "inline-block" }} />
-            Privacy-first document conversion
+            The only PDF converter that never uploads your files
           </div>
 
           <h1 className="animate-fade-up" style={{
@@ -135,9 +201,8 @@ export default function Home() {
             lineHeight: 1.08, letterSpacing: -1.5, marginBottom: 28,
             animationDelay: "0.2s",
           }}>
-            Your files stay<br />
-            <em style={{ fontStyle: "italic", color: "var(--accent)" }}>on your device.</em><br />
-            Always.
+            PDF to Word.<br />
+            <em style={{ fontStyle: "italic", color: "var(--accent)" }}>Without uploading it.</em>
           </h1>
 
           <p className="animate-fade-up" style={{
@@ -145,10 +210,9 @@ export default function Home() {
             maxWidth: 440, marginBottom: 40, fontWeight: 300,
             animationDelay: "0.3s",
           }}>
-            Convert PDF to Word, Excel, PowerPoint — plus merge, split, compress and unlock.
-            Your documents are processed{" "}
-            <strong style={{ color: "var(--ink)", fontWeight: 500 }}>entirely in your browser</strong>{" "}
-            using local AI.
+            Runs entirely in your browser using local AI.
+            Word, Excel, PowerPoint — plus merge, split, compress and unlock.{" "}
+            <strong style={{ color: "var(--ink)", fontWeight: 500 }}>Nothing ever leaves this tab.</strong>
           </p>
 
           <div className="animate-fade-up" style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", animationDelay: "0.4s" }}>
@@ -157,7 +221,7 @@ export default function Home() {
               padding: "14px 28px", borderRadius: 8, fontSize: 15, fontWeight: 500,
               textDecoration: "none", display: "inline-block",
             }}>
-              Convert a PDF free →
+              Try it — no upload required →
             </Link>
             <Link href="/tools" style={{
               background: "var(--cream)", color: "var(--ink)", border: "1px solid var(--border)",
@@ -172,9 +236,9 @@ export default function Home() {
             marginTop: 48, paddingTop: 32, borderTop: "1px solid var(--border)",
             display: "flex", gap: 32, animationDelay: "0.5s",
           }}>
-            {[["0", "bytes sent to servers"], ["2s", "avg. conversion time"], ["4", "output formats"], ["4", "PDF tools"]].map(([num, label]) => (
+            {[["0 bytes", "sent to any server"], ["~2 sec", "avg. conversion time"], ["4", "output formats"], ["4", "free PDF tools"]].map(([num, label]) => (
               <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontFamily: "var(--serif)", fontSize: 28 }}>{num}</span>
+                <span style={{ fontFamily: "var(--serif)", fontSize: 22, letterSpacing: "-0.5px" }}>{num}</span>
                 <span style={{ fontSize: 12, color: "var(--muted)" }}>{label}</span>
               </div>
             ))}
@@ -371,21 +435,21 @@ export default function Home() {
               Works in hospitals.<br />
               Works <em style={{ fontStyle: "italic", color: "#8db89a" }}>everywhere.</em>
             </h2>
-            <p style={{ fontSize: 16, color: "#a0b0a4", lineHeight: 1.7, fontWeight: 300, marginBottom: 32, maxWidth: 440 }}>
-              Because PrivaPDF runs on your device — not our servers — it works
-              with <strong style={{ color: "var(--paper)", fontWeight: 500 }}>zero internet connection</strong> after
-              the first visit. Install it as an app and it&apos;s yours forever.
+            <p style={{ fontSize: 15, color: "#a0b0a4", lineHeight: 1.65, fontWeight: 300, marginBottom: 32, maxWidth: 400 }}>
+              Because PrivaPDF runs on your device, it works with{" "}
+              <strong style={{ color: "var(--paper)", fontWeight: 500 }}>zero internet</strong>{" "}
+              after the first visit. Install as an app — yours forever.
             </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, marginBottom: 40 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 36 }}>
               {[
-                { place: "✈️  On a plane", note: "No Wi-Fi? No problem. Convert mid-flight." },
-                { place: "🏥  In a hospital", note: "Patient records stay local. Compliance by design." },
-                { place: "🏔️  In the field", note: "Remote work sites, ships, rural offices — all covered." },
-                { place: "🔒  In a secure facility", note: "Air-gapped networks welcome. No outbound traffic." },
+                { place: "✈️  On a plane",          note: "No Wi-Fi? No problem." },
+                { place: "🏥  In hospitals",         note: "Patient data stays local. Compliance by design." },
+                { place: "🏔️  Remote work",          note: "Ships, field sites, rural offices — all covered." },
+                { place: "🔒  Secure facilities",    note: "Air-gapped networks. Zero outbound traffic." },
               ].map((item) => (
-                <div key={item.place} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                  <span style={{ fontSize: 15, lineHeight: 1.6, minWidth: 180, color: "var(--paper)", fontWeight: 500 }}>{item.place}</span>
-                  <span style={{ fontSize: 14, color: "#8db89a", lineHeight: 1.6 }}>{item.note}</span>
+                <div key={item.place} style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                  <span style={{ fontSize: 14, lineHeight: 1.6, minWidth: 172, color: "var(--paper)", fontWeight: 500 }}>{item.place}</span>
+                  <span style={{ fontSize: 13, color: "#8db89a", lineHeight: 1.6 }}>{item.note}</span>
                 </div>
               ))}
             </div>
@@ -394,53 +458,53 @@ export default function Home() {
               padding: "14px 28px", borderRadius: 8, fontSize: 15, fontWeight: 500,
               textDecoration: "none",
             }}>
-              Try it now — works offline →
+              Try it — works offline →
             </Link>
           </div>
 
-          {/* Right — install card + keyword badges */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {/* PWA install prompt card */}
+          {/* Right — install card + use-case list */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            {/* PWA install card */}
             <div style={{
               background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 20, padding: 32,
+              borderRadius: 20, padding: 28,
             }}>
-              <div style={{ fontSize: 13, color: "#8db89a", fontWeight: 500, marginBottom: 16, textTransform: "uppercase", letterSpacing: 1 }}>
-                Install as app
+              <div style={{ fontSize: 13, color: "#8db89a", fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>
+                Install as an app
               </div>
-              <p style={{ fontSize: 15, color: "#c8d8cc", lineHeight: 1.65, marginBottom: 20 }}>
-                Chrome and Edge will show an <strong style={{ color: "var(--paper)" }}>&ldquo;Install app&rdquo;</strong> prompt
-                in the address bar. One click — it appears in your dock or taskbar like native software.
+              <p style={{ fontSize: 14, color: "#c8d8cc", lineHeight: 1.6, marginBottom: 16 }}>
+                Chrome and Edge show an{" "}<strong style={{ color: "var(--paper)" }}>&ldquo;Install app&rdquo;</strong>{" "}
+                prompt in the address bar. One click — it appears in your dock like native software.
               </p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                {["No App Store needed", "No updates to manage", "Works offline instantly", "0 MB install size"].map((tag) => (
+                {["No App Store", "Works offline instantly", "0 MB install size", "No updates needed"].map((tag) => (
                   <span key={tag} style={{
-                    fontSize: 12, fontWeight: 500, color: "#8db89a",
+                    fontSize: 11, fontWeight: 500, color: "#8db89a",
                     background: "rgba(26,71,42,0.4)", border: "1px solid rgba(141,184,154,0.2)",
-                    padding: "4px 12px", borderRadius: 20,
+                    padding: "4px 10px", borderRadius: 20,
                   }}>{tag}</span>
                 ))}
               </div>
             </div>
 
-            {/* SEO keyword cluster — shows the offline angle */}
+            {/* Who uses it offline */}
             <div style={{
               background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: 16, padding: 24,
             }}>
-              <div style={{ fontSize: 12, color: "#6b8070", fontWeight: 500, marginBottom: 14, textTransform: "uppercase", letterSpacing: 1 }}>
+              <div style={{ fontSize: 11, color: "#6b8070", fontWeight: 500, marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>
                 Who uses PrivaPDF offline
               </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
-                  { role: "⚖️  Lawyers", reason: "Client files can't touch a cloud server. Bar obligations met by default." },
-                  { role: "🏥  Healthcare staff", reason: "HIPAA-sensitive records stay on the device. Always." },
-                  { role: "💼  Finance teams", reason: "Earnings reports and M&A docs processed without leaving the building." },
-                  { role: "🛩️  Frequent travelers", reason: "Convert contracts at 35,000 feet. No Wi-Fi required." },
-                ].map((item) => (
-                  <div key={item.role} style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 14 }}>
-                    <div style={{ fontSize: 13, color: "var(--paper)", fontWeight: 500, marginBottom: 4 }}>{item.role}</div>
-                    <div style={{ fontSize: 13, color: "#8db89a", lineHeight: 1.5 }}>{item.reason}</div>
+                  { role: "⚖️  Lawyers",           reason: "Client files can't touch a cloud server." },
+                  { role: "🏥  Healthcare",         reason: "HIPAA records stay on device. Always." },
+                  { role: "💼  Finance teams",      reason: "M&A docs never leave the building." },
+                  { role: "🛩️  Frequent travelers", reason: "Convert at 35,000 ft. No Wi-Fi needed." },
+                ].map((item, idx, arr) => (
+                  <div key={item.role} style={{ borderBottom: idx < arr.length - 1 ? "1px solid rgba(255,255,255,0.06)" : "none", paddingBottom: idx < arr.length - 1 ? 12 : 0 }}>
+                    <div style={{ fontSize: 13, color: "var(--paper)", fontWeight: 500, marginBottom: 3 }}>{item.role}</div>
+                    <div style={{ fontSize: 12, color: "#8db89a" }}>{item.reason}</div>
                   </div>
                 ))}
               </div>
@@ -503,24 +567,124 @@ export default function Home() {
               </tr>
             </thead>
             <tbody>
-              {compareRows.map((row, ri) => (
+              {compareRows.map((row, ri) => {
+                const isInverted = INVERTED_ROWS.has(row.feature);
+                return (
                 <tr key={ri}>
                   <td style={{ padding: "18px 28px", fontSize: 14, borderBottom: ri < compareRows.length - 1 ? "1px solid var(--border)" : "none", color: "var(--ink)" }}>{row.feature}</td>
-                  {[row.us, row.small, row.ilove, row.adobe].map((val, ci) => (
+                  {[row.us, row.small, row.ilove, row.adobe].map((val, ci) => {
+                    const isPrivaPDF = ci === 0;
+                    const isCheckmark = val.startsWith("✓");
+                    const isCross = val.startsWith("✗");
+                    // Normal rows: ✓ privapdf=green, ✗ privapdf=red, ✓ competitor=green, ✗ competitor=red
+                    //   → wait, we actually want: ✓ privapdf=good, ✗ competitors=good (they lack it)
+                    // Actually standard: ✓ = green for all, ✗ = red for all EXCEPT inverted rows
+                    // Inverted rows: ✗ privapdf = green (good!), ✓ competitors = red (bad!)
+                    let color = "var(--muted)";
+                    if (isCheckmark || isCross) {
+                      if (isInverted) {
+                        // ✗ = green (good outcome), ✓ = red (bad outcome)
+                        color = isCross ? "#1a472a" : "#b0392a";
+                      } else {
+                        // ✓ = green, ✗ = red — but for competitors ✗ can also mean "bad for them"
+                        // We highlight PrivaPDF advantages: ✓ privapdf=green, ✗ privapdf=red
+                        // competitors: ✗ = neutral/red (they're missing it), ✓ = neutral
+                        if (isPrivaPDF) {
+                          color = isCheckmark ? "#1a472a" : "#b0392a";
+                        } else {
+                          // competitor column: ✗ = muted-red (they lack it), ✓ = neutral green
+                          color = isCross ? "#b0392a" : "#1a472a";
+                        }
+                      }
+                    }
+                    return (
                     <td key={ci} style={{
                       padding: "18px 28px", fontSize: 14,
                       borderBottom: ri < compareRows.length - 1 ? "1px solid var(--border)" : "none",
                       background: ci === 0 ? "#f0fff4" : "transparent",
-                      color: val.startsWith("✓") ? "#1a472a" : val.startsWith("✗") ? "#b0392a" : "var(--muted)",
-                      fontWeight: val.startsWith("✓") ? 500 : 400,
+                      color,
+                      fontWeight: val.startsWith("✓") || val.startsWith("✗") ? 500 : 400,
                     }}>
                       {val}
                     </td>
-                  ))}
+                    );
+                  })}
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
+        </div>
+      </section>
+
+      {/* ── FOR LAWYERS / HIGH-LTV ── */}
+      <section style={{ padding: "96px 80px", background: "var(--ink)", color: "var(--paper)" }}>
+        <div style={{ maxWidth: 800, margin: "0 auto" }}>
+          <div style={{
+            fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
+            color: "#8db89a", marginBottom: 16, display: "flex", alignItems: "center", gap: 8,
+          }}>
+            <span style={{ width: 20, height: 1, background: "#8db89a", display: "inline-block" }} />
+            Built for confidentiality-first professionals
+          </div>
+          <h2 style={{
+            fontFamily: "var(--serif)", fontSize: "clamp(32px,4vw,52px)",
+            lineHeight: 1.1, letterSpacing: -1, marginBottom: 24, color: "var(--paper)",
+          }}>
+            If you work with documents<br />
+            that <em style={{ fontStyle: "italic", color: "#8db89a" }}>can&apos;t leave the building</em> —<br />
+            this was made for you.
+          </h2>
+          <p style={{ fontSize: 16, color: "#a0b0a4", lineHeight: 1.75, fontWeight: 300, maxWidth: 600, marginBottom: 48 }}>
+            Attorneys, compliance officers, healthcare staff, and finance teams handle documents
+            where a single upload to the wrong server is a liability. PrivaPDF makes that risk
+            physically impossible — the conversion engine runs in your browser, not on our infrastructure.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden" }}>
+            {[
+              {
+                icon: "⚖️",
+                title: "Attorneys & Law Firms",
+                points: ["Attorney-client privilege preserved", "No third-party server ever sees client files", "Works in air-gapped and secure networks", "PDF redaction available (Legal plan)"],
+              },
+              {
+                icon: "🏥",
+                title: "Healthcare & HIPAA",
+                points: ["Patient records never leave the device", "Zero cloud exposure by design", "No BAA needed — no PHI transmitted", "Works offline in clinical environments"],
+              },
+              {
+                icon: "💼",
+                title: "Finance & Compliance",
+                points: ["M&A docs, earnings previews stay local", "No data residency concerns", "Audit trail: DevTools proves zero uploads", "Works in restricted trading environments"],
+              },
+            ].map((card, i) => (
+              <div key={i} style={{
+                padding: "36px 32px",
+                background: "rgba(255,255,255,0.04)",
+                borderRight: i < 2 ? "1px solid rgba(255,255,255,0.08)" : "none",
+              }}>
+                <div style={{ fontSize: 32, marginBottom: 16 }}>{card.icon}</div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "var(--paper)", marginBottom: 16 }}>{card.title}</div>
+                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10 }}>
+                  {card.points.map((pt) => (
+                    <li key={pt} style={{ fontSize: 13, color: "#8db89a", display: "flex", alignItems: "flex-start", gap: 8, lineHeight: 1.5 }}>
+                      <span style={{ color: "#8db89a", flexShrink: 0, marginTop: 1 }}>✓</span>
+                      {pt}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 40, textAlign: "center" }}>
+            <Link href="/convert" style={{
+              display: "inline-block", background: "var(--paper)", color: "var(--ink)",
+              padding: "14px 32px", borderRadius: 8, fontSize: 15, fontWeight: 500,
+              textDecoration: "none",
+            }}>
+              Try it — verify yourself in DevTools →
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -585,7 +749,14 @@ export default function Home() {
               <span style={{ fontFamily: "var(--serif)", fontSize: 44, lineHeight: 1 }}>$19</span>
               <span style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>one-time</span>
             </div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 24 }}>pay once, yours forever</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>pay once, yours forever</div>
+            <div style={{
+              fontSize: 11, fontWeight: 600, color: "#b05a2a",
+              background: "#fff7f0", border: "1px solid #ffd4b0",
+              borderRadius: 6, padding: "4px 10px", marginBottom: 24, display: "inline-block",
+            }}>
+              🔥 Launch price — may increase
+            </div>
             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, flex: 1 }}>
               {[
                 "Unlimited conversions",
@@ -724,18 +895,53 @@ export default function Home() {
       {/* ── FOOTER ── */}
       <footer style={{
         padding: "48px 80px", borderTop: "1px solid var(--border)",
-        display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
-        <div style={{ fontFamily: "var(--serif)", fontSize: 18 }}>
-          Priva<span style={{ color: "var(--accent)" }}>PDF</span>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 32, marginBottom: 32 }}>
+          <div>
+            <div style={{ fontFamily: "var(--serif)", fontSize: 20, marginBottom: 8 }}>
+              Priva<span style={{ color: "var(--accent)" }}>PDF</span>
+            </div>
+            <p style={{ fontSize: 13, color: "var(--muted)", maxWidth: 260, lineHeight: 1.6 }}>
+              The only PDF converter where your files are architecturally impossible to access — even by us.
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>Product</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[["/convert", "PDF Converter"], ["/tools", "PDF Tools"], ["/#pricing", "Pricing"], ["/#faq", "FAQ"]].map(([href, label]) => (
+                  <a key={href} href={href} style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>{label}</a>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>Use cases</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[["/#tools", "Merge PDF"], ["/#tools", "Split PDF"], ["/#tools", "Compress PDF"], ["/#tools", "Unlock PDF"]].map(([href, label]) => (
+                  <a key={label} href={href} style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>{label}</a>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>Company</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[["/#how", "How it works"], ["/#faq", "Trust & Privacy"]].map(([href, label]) => (
+                  <a key={label} href={href} style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>{label}</a>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 24 }}>
-          {[["#how", "How it works"], ["#tools", "PDF Tools"], ["#pricing", "Pricing"], ["#faq", "FAQ"], ["/convert", "Convert"], ["/tools", "Tools"]].map(([href, label]) => (
-            <a key={href} href={href} style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>{label}</a>
-          ))}
-        </div>
-        <div style={{ fontSize: 12, color: "var(--muted)" }}>
-          © {new Date().getFullYear()} PrivaPDF — Your files, your device.
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+          <div style={{ fontSize: 12, color: "var(--muted)" }}>
+            © {new Date().getFullYear()} PrivaPDF — Your files, your device.
+          </div>
+          <div style={{ fontSize: 12, color: "var(--muted)", display: "flex", gap: 4, alignItems: "center" }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Zero files uploaded · Zero tracking · Zero servers
+          </div>
         </div>
       </footer>
     </>
