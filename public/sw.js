@@ -2,26 +2,28 @@
 // Caches the app shell for offline use.
 // AI model weights are already cached by Transformers.js in IndexedDB —
 // this SW only needs to handle the UI/app assets.
+//
+// IMPORTANT: Never cache RSC payloads (/_next/data/, .txt RSC requests) or
+// HMR/webpack streams — stale RSC data causes "enqueueModel is not a function"
+// hydration crashes in React 19 / Next.js 16.
 
-const CACHE_NAME = "privapdf-v1";
+// Bump this version any time you deploy to force cache refresh on all clients.
+const CACHE_NAME = "privapdf-v2";
 
-// App shell — everything needed to show the UI offline
+// Only immutable static assets are worth pre-caching.
+// Navigation HTML is always fetched fresh (network-first).
 const APP_SHELL = [
-  "/",
-  "/convert",
-  "/tools",
   "/manifest.json",
 ];
 
-// ── Install: pre-cache app shell ──────────────────────────────────────────────
+// ── Install: pre-cache manifest only ─────────────────────────────────────────
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      // addAll fails if any request fails — use individual adds to be resilient
       return Promise.allSettled(
         APP_SHELL.map((url) =>
           cache.add(url).catch(() => {
-            // silently skip assets that fail (e.g. during first build)
+            // silently skip assets that fail (e.g. during dev)
           })
         )
       );
@@ -29,7 +31,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// ── Activate: clean up old caches ────────────────────────────────────────────
+// ── Activate: clean up ALL old caches ────────────────────────────────────────
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -42,22 +44,44 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// ── Fetch: network-first for navigation, cache-first for assets ───────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+/**
+ * Returns true for requests that must NEVER be cached or intercepted:
+ *  - RSC flight payloads  (/_next/…/*.txt  or  ?_rsc= queries)
+ *  - HMR / webpack dev streams
+ *  - Non-GET requests
+ *  - Cross-origin requests (HuggingFace CDN, etc.)
+ */
+function shouldBypass(request, url) {
+  if (request.method !== "GET") return true;
+  if (url.origin !== self.location.origin) return true;
+
+  const p = url.pathname;
+
+  // Next.js internals that must never be cached
+  if (p.startsWith("/_next/webpack-hmr")) return true;
+  if (p.startsWith("/_next/data/")) return true;   // pages-router RSC data
+  if (p.endsWith(".txt") && p.startsWith("/_next/")) return true; // app-router RSC
+
+  // RSC fetch requests — identified by query param or Accept header
+  if (url.searchParams.has("_rsc")) return true;
+  if (request.headers.get("rsc") === "1") return true;
+  if ((request.headers.get("accept") || "").includes("text/x-component")) return true;
+
+  return false;
+}
+
+// ── Fetch handler ─────────────────────────────────────────────────────────────
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET, cross-origin requests, and HuggingFace model fetches
-  // (those are handled by Transformers.js / IndexedDB — don't intercept)
-  if (
-    request.method !== "GET" ||
-    url.origin !== self.location.origin ||
-    url.pathname.startsWith("/_next/webpack-hmr")
-  ) {
-    return;
-  }
+  // Always let bypassed requests go straight to the network
+  if (shouldBypass(request, url)) return;
 
-  // Static assets (_next/static) — cache-first, long-lived
+  // Immutable static assets (_next/static/) — cache-first
+  // These are content-hashed so stale-forever is safe.
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -74,23 +98,27 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Navigation requests (HTML pages) — network-first, fall back to cache
+  // Navigation requests (HTML pages) — ALWAYS network-first.
+  // Never serve stale HTML; fall back to cached only if completely offline.
   if (request.mode === "navigate") {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response.ok) {
+          // Only cache successful, non-RSC HTML responses
+          if (response.ok && response.headers.get("content-type")?.includes("text/html")) {
             const clone = response.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           }
           return response;
         })
-        .catch(() => caches.match(request).then((cached) => cached || caches.match("/")))
+        .catch(() =>
+          caches.match(request).then((cached) => cached || caches.match("/"))
+        )
     );
     return;
   }
 
-  // Everything else — stale-while-revalidate
+  // Manifest, icons, and other static public assets — stale-while-revalidate
   event.respondWith(
     caches.match(request).then((cached) => {
       const networkFetch = fetch(request).then((response) => {
@@ -99,7 +127,7 @@ self.addEventListener("fetch", (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
-      });
+      }).catch(() => cached); // return stale copy on network failure
       return cached || networkFetch;
     })
   );
