@@ -1,32 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Merge, Scissors, Minimize2, Unlock, RotateCcw, CheckCircle, AlertCircle, ArrowUp, ArrowDown } from "lucide-react";
+import { Merge, Scissors, Minimize2, Unlock, RotateCcw, CheckCircle, AlertCircle, ArrowUp, ArrowDown, EyeOff, FileText } from "lucide-react";
 import { usePdfTools } from "@/hooks/usePdfTools";
 import { ProgressBar } from "@/components/ProgressBar";
 import { UpgradeModal } from "@/components/UpgradeModal";
-import { isPaidPlan } from "@/lib/usage-gate";
+import { isPaidPlan, hasFeature, getPlan } from "@/lib/usage-gate";
+import type { RedactionRect } from "@/lib/pdf-tools";
 
-type ToolTab = "merge" | "split" | "compress" | "unlock";
+type ToolTab = "merge" | "split" | "compress" | "unlock" | "redact" | "privilege_log";
 
-const TABS: { id: ToolTab; label: string; icon: React.ReactNode; desc: string }[] = [
-  { id: "merge",    label: "Merge PDFs",   icon: <Merge size={16} />,     desc: "Combine multiple PDFs into one file" },
-  { id: "split",    label: "Split PDF",    icon: <Scissors size={16} />,  desc: "Extract pages as individual PDFs" },
-  { id: "compress", label: "Compress PDF", icon: <Minimize2 size={16} />, desc: "Reduce file size by up to 70%" },
-  { id: "unlock",   label: "Unlock PDF",   icon: <Unlock size={16} />,    desc: "Remove password protection locally" },
+const ALL_TABS: { id: ToolTab; label: string; icon: React.ReactNode; badge?: string }[] = [
+  { id: "merge",         label: "Merge",       icon: <Merge size={15} /> },
+  { id: "split",         label: "Split",        icon: <Scissors size={15} /> },
+  { id: "compress",      label: "Compress",     icon: <Minimize2 size={15} /> },
+  { id: "unlock",        label: "Unlock",       icon: <Unlock size={15} /> },
+  { id: "redact",        label: "Redact",       icon: <EyeOff size={15} />,   badge: "Legal" },
+  { id: "privilege_log", label: "Privilege Log",icon: <FileText size={15} />, badge: "Legal" },
 ];
 
 export default function ToolsPage() {
   const [activeTab, setActiveTab] = useState<ToolTab>("merge");
+  const [upgradeReason, setUpgradeReason] = useState<"tool_limit" | "feature">("tool_limit");
   const tools = usePdfTools();
+  const plan = getPlan();
+  const isLegal = plan === "legal";
 
   const isProcessing = tools.status === "processing";
 
   function switchTab(tab: ToolTab) {
+    // Legal-only tabs: show upgrade wall if not on legal plan
+    if ((tab === "redact" || tab === "privilege_log") && !isLegal) {
+      setUpgradeReason("feature");
+      // We show the upgrade modal inline, not via status
+      setShowUpgrade(true);
+      return;
+    }
     setActiveTab(tab);
     tools.reset();
   }
+
+  const [showUpgrade, setShowUpgrade] = useState(false);
 
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)" }}>
@@ -68,36 +83,48 @@ export default function ToolsPage() {
         </div>
 
         {/* Tool tabs */}
-        <div className="tools-tab-grid">
-          {TABS.map((tab, i) => (
-            <button
-              key={tab.id}
-              onClick={() => switchTab(tab.id)}
-              style={{
-                display: "flex", flexDirection: "column", alignItems: "center",
-                gap: 6, padding: "18px 12px",
-                borderRight: i < 3 ? "1px solid var(--border)" : "none",
-                border: "none",
-                background: activeTab === tab.id ? "var(--paper)" : "transparent",
-                color: activeTab === tab.id ? "var(--accent)" : "var(--muted)",
-                fontWeight: activeTab === tab.id ? 600 : 400,
-                fontSize: 12, cursor: "pointer", fontFamily: "var(--sans)",
-                transition: "all 0.15s",
-                borderBottom: activeTab === tab.id ? "2px solid var(--accent)" : "2px solid transparent",
-              }}
-            >
-              {tab.icon}
-              <span style={{ fontSize: 12, lineHeight: 1.3, textAlign: "center" }}>{tab.label}</span>
-            </button>
-          ))}
+        <div style={{
+          display: "grid", gridTemplateColumns: "repeat(6, 1fr)",
+          border: "1px solid var(--border)", borderRadius: 14,
+          overflow: "hidden", marginBottom: 32, background: "var(--cream)",
+        }}>
+          {ALL_TABS.map((tab, i) => {
+            const isLocked = (tab.id === "redact" || tab.id === "privilege_log") && !isLegal;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => switchTab(tab.id)}
+                title={isLocked ? `${tab.label} — Legal plan only` : tab.label}
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center",
+                  gap: 5, padding: "14px 8px",
+                  borderRight: i < ALL_TABS.length - 1 ? "1px solid var(--border)" : "none",
+                  border: "none",
+                  background: activeTab === tab.id ? "var(--paper)" : "transparent",
+                  color: isLocked ? "var(--border)" : activeTab === tab.id ? "var(--accent)" : "var(--muted)",
+                  fontWeight: activeTab === tab.id ? 600 : 400,
+                  fontSize: 11, cursor: isLocked ? "default" : "pointer", fontFamily: "var(--sans)",
+                  transition: "all 0.15s",
+                  borderBottom: activeTab === tab.id ? "2px solid var(--accent)" : "2px solid transparent",
+                  position: "relative",
+                }}
+              >
+                {tab.icon}
+                <span style={{ lineHeight: 1.3, textAlign: "center" }}>{tab.label}</span>
+                {tab.badge && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase",
+                    background: isLocked ? "var(--border)" : "var(--accent)",
+                    color: "#fff", padding: "1px 5px", borderRadius: 10,
+                  }}>{tab.badge}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Tool card */}
-        <div style={{
-          background: "var(--paper)", border: "1px solid var(--border)",
-          borderRadius: 20, padding: "36px 40px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        }}>
+        <div className="tools-card">
           {/* ── MERGE ── */}
           {activeTab === "merge" && (
             <MergePanel tools={tools} isProcessing={isProcessing} />
@@ -113,6 +140,14 @@ export default function ToolsPage() {
           {/* ── UNLOCK ── */}
           {activeTab === "unlock" && (
             <UnlockPanel tools={tools} isProcessing={isProcessing} />
+          )}
+          {/* ── REDACT (Legal) ── */}
+          {activeTab === "redact" && (
+            <RedactPanel tools={tools} isProcessing={isProcessing} />
+          )}
+          {/* ── PRIVILEGE LOG (Legal) ── */}
+          {activeTab === "privilege_log" && (
+            <PrivilegeLogPanel tools={tools} isProcessing={isProcessing} />
           )}
 
           {/* Shared: progress */}
@@ -177,7 +212,12 @@ export default function ToolsPage() {
       </main>
 
       {/* ── Upgrade modal when daily tool limit reached ── */}
-      {tools.status === "limit_reached" && <UpgradeModal onClose={tools.reset} />}
+      {(tools.status === "limit_reached" || showUpgrade) && (
+        <UpgradeModal
+          onClose={() => { tools.reset(); setShowUpgrade(false); }}
+          reason={tools.status === "limit_reached" ? "tool_limit" : upgradeReason}
+        />
+      )}
     </div>
   );
 }
@@ -561,3 +601,290 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
+
+// ── Redact Panel (Legal) ──────────────────────────────────────────────────────
+
+function RedactPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const [drawing, setDrawing] = useState(false);
+  const [startPt, setStartPt] = useState<{ x: number; y: number } | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [previewRect, setPreviewRect] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+
+  // Draw page image + existing rects onto each canvas
+  const redrawCanvas = useCallback((pageIdx: number) => {
+    const rp = tools.redactPages[pageIdx];
+    const canvas = canvasRefs.current[pageIdx];
+    if (!rp || !canvas) return;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(rp.canvas, 0, 0);
+    ctx.fillStyle = "rgba(0,0,0,0.85)";
+    for (const r of tools.redactRects.filter((r) => r.page === rp.pageNum)) {
+      ctx.fillRect(r.canvasX, r.canvasY, r.canvasWidth, r.canvasHeight);
+    }
+  }, [tools.redactPages, tools.redactRects]);
+
+  const getRelativePos = (e: React.MouseEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>, pageNum: number) => {
+    const canvas = e.currentTarget;
+    const pos = getRelativePos(e, canvas);
+    setDrawing(true);
+    setStartPt(pos);
+    setCurrentPage(pageNum);
+    setPreviewRect(null);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!drawing || !startPt) return;
+    const canvas = e.currentTarget;
+    const pos = getRelativePos(e, canvas);
+    const pageIdx = tools.redactPages.findIndex((p) => p.pageNum === currentPage);
+    if (pageIdx < 0) return;
+    const ctx = canvas.getContext("2d")!;
+    // Redraw clean
+    redrawCanvas(pageIdx);
+    // Draw live rect
+    const x = Math.min(pos.x, startPt.x);
+    const y = Math.min(pos.y, startPt.y);
+    const w = Math.abs(pos.x - startPt.x);
+    const h = Math.abs(pos.y - startPt.y);
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.strokeStyle = "#ff4444";
+    ctx.lineWidth = 2;
+    ctx.fillRect(x, y, w, h);
+    ctx.strokeRect(x, y, w, h);
+    setPreviewRect({ x, y, w, h });
+  };
+
+  const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!drawing || !startPt || !previewRect) { setDrawing(false); return; }
+    const { x, y, w, h } = previewRect;
+    if (w < 5 || h < 5) { setDrawing(false); setStartPt(null); setPreviewRect(null); return; }
+    tools.addRedactRect({
+      page: currentPage,
+      x: 0, y: 0, width: 0, height: 0, // PDF space — not used for canvas-based burn
+      canvasX: x, canvasY: y, canvasWidth: w, canvasHeight: h,
+    });
+    setDrawing(false);
+    setStartPt(null);
+    setPreviewRect(null);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<EyeOff size={18} />}
+        title="PDF Redaction"
+        desc="Draw black boxes over sensitive text · Burned permanently into the output · No uploads"
+      />
+
+      <div style={{
+        padding: "12px 16px", background: "var(--accent-light)",
+        border: "1px solid var(--accent)", borderRadius: 10,
+        fontSize: 13, color: "var(--accent)",
+        display: "flex", alignItems: "flex-start", gap: 8,
+      }}>
+        <span style={{ flexShrink: 0 }}>⚖️</span>
+        <span>
+          <strong>Legal plan feature.</strong> Redactions are applied client-side and permanently
+          burned into the PDF — no metadata leakage. Your file never leaves this browser.
+        </span>
+      </div>
+
+      {!tools.redactFile ? (
+        <PdfDropZone onFiles={(files) => tools.setRedactFile(files[0] || null)} label="Drop a PDF to redact" />
+      ) : (
+        <>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "12px 16px", background: "var(--cream)",
+            border: "1px solid var(--border)", borderRadius: 10,
+          }}>
+            <span style={{ fontSize: 13, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {tools.redactFile.name}
+            </span>
+            <span style={{ fontSize: 12, color: "var(--accent)", fontWeight: 500, flexShrink: 0 }}>
+              {tools.redactPages.length} page{tools.redactPages.length !== 1 ? "s" : ""}
+            </span>
+            <IconBtn onClick={() => tools.setRedactFile(null)} title="Remove">✕</IconBtn>
+          </div>
+
+          {tools.redactRects.length > 0 && (
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "10px 16px", background: "#fff3e0",
+              border: "1px solid #ffb74d", borderRadius: 10,
+              fontSize: 13, color: "#b05a2a",
+            }}>
+              <span>
+                <strong>{tools.redactRects.length}</strong> area{tools.redactRects.length !== 1 ? "s" : ""} marked for redaction
+              </span>
+              <button
+                onClick={tools.clearRedactRects}
+                style={{
+                  background: "none", border: "1px solid #ffb74d", borderRadius: 6,
+                  cursor: "pointer", padding: "3px 10px", fontSize: 12,
+                  color: "#b05a2a", fontFamily: "var(--sans)",
+                }}
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
+          <p style={{ fontSize: 12, color: "var(--muted)", margin: "0 0 -8px" }}>
+            ✏️ <strong>Click and drag</strong> on any page below to mark a redaction area.
+          </p>
+
+          {/* Page canvases */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, maxHeight: 600, overflowY: "auto", paddingRight: 4 }}>
+            {tools.redactPages.map((rp, idx) => (
+              <div key={rp.pageNum} style={{ border: "1px solid var(--border)", borderRadius: 8, overflow: "hidden" }}>
+                <div style={{
+                  padding: "6px 12px", background: "var(--cream)",
+                  borderBottom: "1px solid var(--border)",
+                  fontSize: 12, fontWeight: 500, color: "var(--muted)",
+                  display: "flex", justifyContent: "space-between",
+                }}>
+                  <span>Page {rp.pageNum}</span>
+                  <span style={{ color: "var(--accent)" }}>
+                    {tools.redactRects.filter((r) => r.page === rp.pageNum).length} mark{tools.redactRects.filter((r) => r.page === rp.pageNum).length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+                <canvas
+                  ref={(el) => { canvasRefs.current[idx] = el; if (el) { const ctx = el.getContext("2d")!; ctx.drawImage(rp.canvas, 0, 0); redrawCanvas(idx); } }}
+                  width={rp.viewportWidth}
+                  height={rp.viewportHeight}
+                  onMouseDown={(e) => handleMouseDown(e, rp.pageNum)}
+                  onMouseMove={handleMouseMove}
+                  onMouseUp={handleMouseUp}
+                  onMouseLeave={() => { if (drawing) { setDrawing(false); setStartPt(null); setPreviewRect(null); redrawCanvas(idx); } }}
+                  style={{
+                    width: "100%", display: "block",
+                    cursor: "crosshair",
+                    userSelect: "none",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <RunButton
+            disabled={isProcessing || tools.redactRects.length === 0}
+            onClick={tools.runRedact}
+            isProcessing={isProcessing}
+            label={`Apply ${tools.redactRects.length} redaction${tools.redactRects.length !== 1 ? "s" : ""} & download →`}
+            disabledReason={tools.redactRects.length === 0 ? "Draw at least one redaction area above" : undefined}
+          />
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Privilege Log Panel (Legal) ───────────────────────────────────────────────
+
+function PrivilegeLogPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<FileText size={18} />}
+        title="Privilege Log Export"
+        desc="Extract document entries from a PDF and export as a structured CSV · No uploads"
+      />
+
+      <div style={{
+        padding: "12px 16px", background: "var(--accent-light)",
+        border: "1px solid var(--accent)", borderRadius: 10,
+        fontSize: 13, color: "var(--accent)",
+        display: "flex", alignItems: "flex-start", gap: 8,
+      }}>
+        <span style={{ flexShrink: 0 }}>⚖️</span>
+        <span>
+          <strong>Legal plan feature.</strong> Reads each page of your PDF locally, extracts
+          text and date/privilege keywords, and downloads a ready-to-file CSV privilege log.
+        </span>
+      </div>
+
+      <PdfDropZone onFiles={(files) => tools.setPrivLogFile(files[0] || null)} label="Drop a PDF document to parse" />
+
+      {tools.privLogFile && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px", background: "var(--cream)",
+          border: "1px solid var(--border)", borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 13, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tools.privLogFile.name}
+          </span>
+          <IconBtn onClick={() => tools.setPrivLogFile(null)} title="Remove">✕</IconBtn>
+        </div>
+      )}
+
+      {tools.privLogEntries.length > 0 && (
+        <div style={{ border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden" }}>
+          <div style={{
+            padding: "10px 16px", background: "var(--cream)",
+            borderBottom: "1px solid var(--border)",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+            fontSize: 12, fontWeight: 600, color: "var(--muted)",
+          }}>
+            <span>PREVIEW — {tools.privLogEntries.length} entries extracted</span>
+            <span style={{ color: "var(--accent)", fontWeight: 500 }}>CSV downloaded automatically</span>
+          </div>
+          <div style={{ maxHeight: 260, overflowY: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+              <thead>
+                <tr style={{ background: "var(--cream)", position: "sticky", top: 0 }}>
+                  {["Doc #", "Date", "Privilege", "Description"].map((h) => (
+                    <th key={h} style={{ padding: "8px 12px", textAlign: "left", borderBottom: "1px solid var(--border)", fontWeight: 600, color: "var(--muted)", fontSize: 11, whiteSpace: "nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tools.privLogEntries.slice(0, 50).map((e, i) => (
+                  <tr key={i} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <td style={{ padding: "8px 12px", color: "var(--muted)", whiteSpace: "nowrap" }}>{e.docNumber}</td>
+                    <td style={{ padding: "8px 12px", color: "var(--muted)", whiteSpace: "nowrap" }}>{e.date || "—"}</td>
+                    <td style={{ padding: "8px 12px", whiteSpace: "nowrap" }}>
+                      <span style={{
+                        fontSize: 10, fontWeight: 600,
+                        background: e.privilege === "Unknown" ? "var(--cream)" : "var(--accent-light)",
+                        color: e.privilege === "Unknown" ? "var(--muted)" : "var(--accent)",
+                        padding: "2px 8px", borderRadius: 10,
+                      }}>{e.privilege}</span>
+                    </td>
+                    <td style={{ padding: "8px 12px", color: "var(--ink)", maxWidth: 300, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.description}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {tools.privLogEntries.length > 50 && (
+            <div style={{ padding: "8px 16px", fontSize: 11, color: "var(--muted)", borderTop: "1px solid var(--border)" }}>
+              Showing first 50 of {tools.privLogEntries.length} entries — full data is in the downloaded CSV.
+            </div>
+          )}
+        </div>
+      )}
+
+      <RunButton
+        disabled={isProcessing || !tools.privLogFile}
+        onClick={tools.runPrivilegeLog}
+        isProcessing={isProcessing}
+        label="Extract & download privilege log CSV →"
+        disabledReason={!tools.privLogFile ? "Select a PDF first" : undefined}
+      />
+    </div>
+  );
+}
+

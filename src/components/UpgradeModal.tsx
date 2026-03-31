@@ -1,11 +1,41 @@
 "use client";
-// UpgradeModal.tsx — shown when daily limit is reached
+// UpgradeModal.tsx — shown when daily limit is reached or a gated feature is accessed
 
 import { X, Zap, ShieldCheck, Layers, Table2, Presentation } from "lucide-react";
 
+export type UpgradeReason = "conversion_limit" | "tool_limit" | "batch" | "ocr" | "format" | "feature";
+
 interface UpgradeModalProps {
   onClose: () => void;
+  reason?: UpgradeReason;
 }
+
+const REASON_COPY: Record<UpgradeReason, { title: string; sub: string }> = {
+  conversion_limit: {
+    title: "You've used your 3 free conversions today",
+    sub: "Upgrade to unlock unlimited conversions, AI OCR, Excel & PowerPoint export.",
+  },
+  tool_limit: {
+    title: "You've used your 3 free tool uses today",
+    sub: "Upgrade to unlock unlimited PDF tool uses — merge, split, compress & unlock.",
+  },
+  batch: {
+    title: "Batch conversion is a paid feature",
+    sub: "Convert multiple PDFs at once with any paid plan.",
+  },
+  ocr: {
+    title: "AI OCR requires a paid plan",
+    sub: "Upgrade to unlock AI OCR for scanned & handwritten PDFs.",
+  },
+  format: {
+    title: "Excel & PowerPoint export requires a paid plan",
+    sub: "Upgrade to export PDF to Excel (.xlsx) or PowerPoint (.pptx).",
+  },
+  feature: {
+    title: "This feature requires a paid plan",
+    sub: "Upgrade to Individual, Pro, or Legal to unlock all features.",
+  },
+};
 
 const FEATURES = [
   { icon: <Zap size={14} />,          text: "Unlimited conversions every day" },
@@ -57,7 +87,9 @@ const PLANS = [
   },
 ] as const;
 
-export function UpgradeModal({ onClose }: UpgradeModalProps) {
+export function UpgradeModal({ onClose, reason = "conversion_limit" }: UpgradeModalProps) {
+  const copy = REASON_COPY[reason];
+
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 200,
@@ -110,10 +142,10 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
             <Zap size={24} color="var(--accent)" />
           </div>
           <h2 style={{ fontFamily: "var(--serif)", fontSize: 22, marginBottom: 6, color: "var(--ink)" }}>
-            You&apos;ve used your 3 free conversions today
+            {copy.title}
           </h2>
           <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.5 }}>
-            Upgrade to unlock unlimited conversions, AI OCR, Excel &amp; PowerPoint export.
+            {copy.sub}
           </p>
         </div>
 
@@ -148,25 +180,21 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
                   {plan.label}
                   {plan.id === "individual" && (
                     <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, letterSpacing: 1, textTransform: "uppercase", background: "var(--accent)", color: "#fff", padding: "2px 8px", borderRadius: 20 }}>
-                      Popular
-                    </span>
-                  )}
-                  {plan.id === "legal" && (
-                    <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 600, color: "var(--muted)", background: "var(--cream)", border: "1px solid var(--border)", padding: "2px 8px", borderRadius: 20 }}>
-                      ⚖️ Attorneys
+                      Best value
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 11, color: plan.highlight ? "#8db89a" : "var(--muted)" }}>{plan.sub}</div>
+                <div style={{ fontSize: 12, color: plan.highlight ? "#8db89a" : "var(--muted)" }}>{plan.sub}</div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontFamily: "var(--serif)", fontSize: 22, color: plan.highlight ? "#fff" : "var(--ink)" }}>
+                <span style={{ fontFamily: "var(--serif)", fontSize: 20, color: plan.highlight ? "#fff" : "var(--ink)" }}>
                   {plan.price}
                 </span>
                 <span style={{
-                  fontSize: 12, fontWeight: 600, padding: "6px 14px", borderRadius: 8,
-                  background: plan.highlight ? "#fff" : "var(--ink)",
-                  color: plan.highlight ? "var(--ink)" : "#fff",
+                  fontSize: 12, fontWeight: 600, padding: "7px 14px", borderRadius: 8,
+                  background: plan.highlight ? "var(--accent)" : "var(--cream)",
+                  color: plan.highlight ? "#fff" : "var(--ink)",
+                  border: plan.highlight ? "none" : "1px solid var(--border)",
                 }}>
                   {plan.cta}
                 </span>
@@ -175,8 +203,8 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
           ))}
         </div>
 
-        <p style={{ textAlign: "center", fontSize: 11, color: "var(--muted)", marginTop: -4 }}>
-          Secure checkout via LemonSqueezy · 14-day refund policy · Files never leave your device
+        <p style={{ textAlign: "center", fontSize: 11, color: "var(--muted)", marginTop: -8 }}>
+          Secure checkout · 14-day refund policy · Files always stay on your device
         </p>
       </div>
     </div>

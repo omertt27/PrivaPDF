@@ -29,6 +29,40 @@ export interface CompressOptions {
   scale?: number;
 }
 
+export interface RedactionRect {
+  /** 1-based page number */
+  page: number;
+  /** Coordinates in PDF user-space points (origin = bottom-left) */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  /** Canvas-space coords stored for hit-testing (origin = top-left) */
+  canvasX: number;
+  canvasY: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  label?: string;
+}
+
+export interface RenderedPage {
+  pageNum: number;
+  canvas: HTMLCanvasElement;
+  scale: number;
+  viewportWidth: number;
+  viewportHeight: number;
+}
+
+export interface PrivilegeLogEntry {
+  docNumber: string;
+  date: string;
+  author: string;
+  recipient: string;
+  description: string;
+  privilege: string;
+  pages: string;
+}
+
 // ─── Merge ────────────────────────────────────────────────────────────────────
 
 /**
@@ -245,6 +279,161 @@ export async function unlockPDF(
   const baseName = file.name.replace(/\.pdf$/i, "");
   triggerDownload(blob, `${baseName}_unlocked.pdf`);
   onProgress?.(100, "Done!");
+}
+
+// ─── Redaction ────────────────────────────────────────────────────────────────
+
+/**
+ * Renders all pages of a PDF to canvases for interactive redaction marking.
+ */
+export async function renderPDFPages(
+  file: File,
+  scale = 1.5,
+  onProgress?: (pct: number, stage: string) => void
+): Promise<RenderedPage[]> {
+  const lib = await getPdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await lib.getDocument({ data: buf }).promise;
+  const rendered: RenderedPage[] = [];
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    onProgress?.(Math.round((p / pdf.numPages) * 90), `Rendering page ${p} of ${pdf.numPages}...`);
+    const page = await pdf.getPage(p);
+    const viewport = page.getViewport({ scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext("2d")!;
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+    rendered.push({
+      pageNum: p,
+      canvas,
+      scale,
+      viewportWidth: viewport.width,
+      viewportHeight: viewport.height,
+    });
+  }
+  onProgress?.(100, "Ready for redaction marking");
+  return rendered;
+}
+
+/**
+ * Burns redaction rectangles (solid black boxes) onto the rendered page canvases,
+ * then assembles and downloads the redacted PDF.
+ */
+export async function redactPDF(
+  renderedPages: RenderedPage[],
+  rects: RedactionRect[],
+  outputName: string,
+  onProgress?: (pct: number, stage: string) => void
+): Promise<void> {
+  if (rects.length === 0) throw new Error("No redaction areas marked.");
+
+  const pageImages: { width: number; height: number; dataUrl: string }[] = [];
+
+  for (let i = 0; i < renderedPages.length; i++) {
+    const rp = renderedPages[i];
+    onProgress?.(Math.round((i / renderedPages.length) * 85), `Applying redactions to page ${rp.pageNum}...`);
+
+    // Clone canvas so we don't mutate the displayed preview
+    const canvas = document.createElement("canvas");
+    canvas.width = rp.canvas.width;
+    canvas.height = rp.canvas.height;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(rp.canvas, 0, 0);
+
+    // Paint all rects for this page
+    const pageRects = rects.filter((r) => r.page === rp.pageNum);
+    ctx.fillStyle = "#000000";
+    for (const r of pageRects) {
+      ctx.fillRect(r.canvasX, r.canvasY, r.canvasWidth, r.canvasHeight);
+    }
+
+    pageImages.push({
+      width: canvas.width,
+      height: canvas.height,
+      dataUrl: canvas.toDataURL("image/jpeg", 0.92),
+    });
+  }
+
+  onProgress?.(90, "Assembling redacted PDF...");
+  const pdfBytes = buildImagePDF(pageImages);
+  const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: "application/pdf" });
+  triggerDownload(blob, `${outputName}_REDACTED.pdf`);
+  onProgress?.(100, `Done! ${rects.length} area${rects.length !== 1 ? "s" : ""} redacted.`);
+}
+
+// ─── Privilege Log Export ─────────────────────────────────────────────────────
+
+/**
+ * Extracts text from each page of a PDF, attempts to parse it as a privilege
+ * log table, and returns structured entries + a downloadable CSV.
+ */
+export async function extractPrivilegeLog(
+  file: File,
+  onProgress?: (pct: number, stage: string) => void
+): Promise<PrivilegeLogEntry[]> {
+  const lib = await getPdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await lib.getDocument({ data: buf }).promise;
+
+  const allLines: string[] = [];
+
+  for (let p = 1; p <= pdf.numPages; p++) {
+    onProgress?.(Math.round((p / pdf.numPages) * 70), `Reading page ${p} of ${pdf.numPages}...`);
+    const page = await pdf.getPage(p);
+    const textContent = await page.getTextContent();
+    const line = textContent.items
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((item: any) => item.str as string)
+      .join(" ")
+      .trim();
+    if (line) allLines.push(`[Page ${p}] ${line}`);
+  }
+
+  onProgress?.(80, "Parsing document entries...");
+
+  // Heuristic parser: split on common log separators and build one entry per page
+  const entries: PrivilegeLogEntry[] = allLines.map((line, i) => {
+    // Try to find a date pattern (MM/DD/YYYY or YYYY-MM-DD)
+    const dateMatch = line.match(/\b(\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2})\b/);
+    // Try to find privilege type keywords
+    const privMatch = line.match(/\b(Attorney[- ]Client|Work Product|Confidential|Privileged|ACP|WP|AC)\b/i);
+    return {
+      docNumber: String(i + 1).padStart(4, "0"),
+      date: dateMatch ? dateMatch[1] : "",
+      author: "",
+      recipient: "",
+      description: line.replace(/^\[Page \d+\]\s*/, "").slice(0, 200),
+      privilege: privMatch ? privMatch[1] : "Unknown",
+      pages: `Page ${i + 1}`,
+    };
+  });
+
+  onProgress?.(90, "Generating CSV...");
+
+  const csvHeader = ["Doc #", "Date", "Author", "Recipient", "Description", "Privilege", "Pages"];
+  const csvRows = entries.map((e) => [
+    csvQuote(e.docNumber),
+    csvQuote(e.date),
+    csvQuote(e.author),
+    csvQuote(e.recipient),
+    csvQuote(e.description),
+    csvQuote(e.privilege),
+    csvQuote(e.pages),
+  ]);
+
+  const csv = [csvHeader, ...csvRows].map((r) => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const baseName = file.name.replace(/\.pdf$/i, "");
+  triggerDownload(blob, `${baseName}_privilege_log.csv`);
+
+  onProgress?.(100, `Done! ${entries.length} entries exported.`);
+  return entries;
+}
+
+function csvQuote(s: string): string {
+  return `"${s.replace(/"/g, '""')}"`;
 }
 
 // ─── Minimal PDF image builder ────────────────────────────────────────────────

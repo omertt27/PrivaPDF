@@ -47,6 +47,7 @@ export default function ConvertPage() {
     pageRange,
     totalPages,
     batchJobs,
+    limitReason,
     setOutputFormat,
     setPageRange,
     loadAIModels,
@@ -197,13 +198,7 @@ export default function ConvertPage() {
         </div>
 
         {/* ── Main card ─────────────────────────────────────────────────────── */}
-        <div style={{
-          background: "var(--paper)",
-          border: "1px solid var(--border)",
-          borderRadius: 20,
-          padding: "40px 40px",
-          boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
-        }}>
+        <div className="convert-card">
 
           {/* ── SINGLE FILE TAB ── */}
           {activeTab === "single" && (
@@ -476,7 +471,7 @@ export default function ConvertPage() {
       </main>
 
       {/* ── Upgrade modal ─────────────────────────────────────────────────── */}
-      {status === "limit_reached" && <UpgradeModal onClose={reset} />}
+      {status === "limit_reached" && <UpgradeModal onClose={reset} reason={limitReason} />}
     </div>
   );
 }

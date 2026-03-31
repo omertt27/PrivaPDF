@@ -189,6 +189,14 @@ body {
   padding-top: 24px;
   border-top: 1px solid var(--border);
 }
+/* Convert card inner padding — responsive */
+.convert-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
 
 /* TOOLS PAGE */
 .tools-tab-grid {
@@ -199,6 +207,14 @@ body {
   overflow: hidden;
   margin-bottom: 32px;
   background: var(--cream);
+}
+/* Tools card inner padding — responsive */
+.tools-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px 40px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 /* ─── MOBILE ─────────────────────────────────────────────────────────────────── */
@@ -358,6 +374,15 @@ body {
 
   /* CONVERT */
   .convert-main { padding: 32px 16px; }
+  .convert-card { padding: 24px 20px; }
+  .convert-options-grid { grid-template-columns: 1fr; }
+
+  /* TOOLS */
+  .tools-card { padding: 24px 20px; }
+  .tools-tab-grid { grid-template-columns: repeat(2, 1fr); }
+  .tools-tab-grid > button:nth-child(odd) { border-right: 1px solid var(--border) !important; }
+  .tools-tab-grid > button:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+
   /* Tools main padding */
   main[style*="820"] {
     padding-top: 36px !important;
@@ -378,7 +403,9 @@ body {
   .hero-right { padding: 24px 16px; }
   .section-pad { padding: 48px 16px; }
   .section-pad-sm { padding: 40px 16px; }
-  .convert-main { padding: 32px 12px; }
+  .convert-main { padding: 24px 12px; }
+  .convert-card { padding: 20px 16px; }
+  .tools-card { padding: 20px 16px; }
 
   /* pricing stacks nicely already, just tighten gap */
   .pricing-grid { gap: 12px; }
@@ -394,4 +421,7 @@ body {
   .proof-grid > div:last-child {
     border-bottom: none !important;
   }
+
+  /* tools tab: single column on tiny screens */
+  .tools-tab-grid { grid-template-columns: repeat(2, 1fr); }
 }

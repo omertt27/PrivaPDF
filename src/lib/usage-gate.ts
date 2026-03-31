@@ -20,11 +20,15 @@ export const PLAN_META: Record<PlanTier, { label: string; color: string; badge: 
 };
 
 // Features unlocked per tier (cumulative)
+// free: PDF→DOCX + TXT (3/day), Merge/Split/Compress/Unlock (3/day)
+// individual: everything in free + unlimited + ocr + xlsx + pptx + batch + page_range
+// pro: everything in individual + priority support features
+// legal: everything in pro + redaction + advanced_ocr + privilege_log
 export const PLAN_FEATURES: Record<PlanTier, readonly string[]> = {
   free:       [],
-  individual: ["unlimited", "ocr", "xlsx", "pptx", "batch"],
-  pro:        ["unlimited", "ocr", "xlsx", "pptx", "batch"],
-  legal:      ["unlimited", "ocr", "xlsx", "pptx", "batch", "redaction", "advanced_ocr"],
+  individual: ["unlimited", "ocr", "xlsx", "pptx", "batch", "page_range"],
+  pro:        ["unlimited", "ocr", "xlsx", "pptx", "batch", "page_range"],
+  legal:      ["unlimited", "ocr", "xlsx", "pptx", "batch", "page_range", "redaction", "advanced_ocr", "privilege_log"],
 };
 
 interface UsageRecord {

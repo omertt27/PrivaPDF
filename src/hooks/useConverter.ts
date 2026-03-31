@@ -9,8 +9,9 @@ import { buildDocx, parseTextBlocks, type ProcessedPage, type TextBlock } from "
 import { buildXlsx } from "@/lib/xlsx-builder";
 import { buildTxt } from "@/lib/txt-builder";
 import { buildPptx } from "@/lib/pptx-builder";
-import { consumeConversion, isProUser, getPlan, getRemainingConversions, hasFeature, PLAN_META, type PlanTier } from "@/lib/usage-gate";
+import { consumeConversion, getPlan, getRemainingConversions, hasFeature, isProUser, PLAN_META, type PlanTier } from "@/lib/usage-gate";
 import { useConverterWorker } from "./useConverterWorker";
+import type { UpgradeReason } from "@/components/UpgradeModal";
 
 export type OutputFormat = "docx" | "xlsx" | "txt" | "pptx";
 
@@ -59,6 +60,7 @@ export interface UseConverterReturn {
   pageRange: { from: number; to: number } | null;
   totalPages: number;
   batchJobs: BatchJob[];
+  limitReason: UpgradeReason;
   setOutputFormat: (f: OutputFormat) => void;
   setPageRange: (r: { from: number; to: number } | null) => void;
   loadAIModels: () => void;
@@ -74,6 +76,7 @@ async function processPages(
   parsed: { pages: ParsedPage[]; totalPages: number; isTextBased: boolean; fileName: string },
   pageRange: { from: number; to: number } | null,
   modelsReady: boolean,
+  canOCR: boolean,
   runOCR: (img: string, n: number) => Promise<string>,
   runLayout: (img: string, n: number) => Promise<Record<string, unknown>>,
   onProgress: (pct: number, stage: string) => void
@@ -93,7 +96,7 @@ async function processPages(
     if (page.hasText) {
       onProgress(pageProgress, `Processing page ${i + 1} of ${pages.length} (text mode)...`);
       blocks = parseTextBlocks(page.text);
-    } else if (modelsReady) {
+    } else if (modelsReady && canOCR) {
       onProgress(pageProgress, `OCR scanning page ${i + 1} of ${pages.length}...`);
       try {
         const [ocrText, layout] = await Promise.all([
@@ -115,7 +118,11 @@ async function processPages(
       blocks = [
         {
           type: "paragraph",
-          text: page.text || "[Scanned page — enable AI OCR for full text extraction]",
+          text: page.text || (
+            canOCR
+              ? "[Scanned page — enable AI OCR for full text extraction]"
+              : "[Scanned page — AI OCR requires a paid plan. Upgrade at privapdf.com/#pricing]"
+          ),
         },
       ];
     }
@@ -156,6 +163,7 @@ export function useConverter(): UseConverterReturn {
   const [pageRange, setPageRange] = useState<{ from: number; to: number } | null>(null);
   const [totalPages, setTotalPages] = useState(0);
   const [batchJobs, setBatchJobs] = useState<BatchJob[]>([]);
+  const [limitReason, setLimitReason] = useState<UpgradeReason>("conversion_limit");
 
   const {
     status: workerStatus,
@@ -173,16 +181,33 @@ export function useConverter(): UseConverterReturn {
 
   const convertFile = useCallback(
     async (file: File) => {
-      const pro = isProUser();
+      const paid = isProUser();
 
-      if (!pro) {
+      // ── Guard: free-tier daily limit ──────────────────────────────────────
+      if (!paid) {
         const ok = consumeConversion();
         if (!ok) {
+          setLimitReason("conversion_limit");
           setStatus("limit_reached");
           return;
         }
         setRemaining(getRemainingConversions());
       }
+
+      // ── Guard: format access ───────────────────────────────────────────────
+      const canXlsx  = hasFeature("xlsx");
+      const canPptx  = hasFeature("pptx");
+      const canOCR   = hasFeature("ocr");
+      const canRange = hasFeature("page_range");
+
+      // Silently fall back to docx if a locked format was somehow selected
+      const safeFormat: OutputFormat =
+        (outputFormat === "xlsx" && !canXlsx) ? "docx" :
+        (outputFormat === "pptx" && !canPptx) ? "docx" :
+        outputFormat;
+
+      // Silently ignore page range for free users
+      const safeRange = canRange ? pageRange : null;
 
       setStatus("parsing");
       setError(null);
@@ -202,8 +227,9 @@ export function useConverter(): UseConverterReturn {
 
         const processedPages = await processPages(
           parsed,
-          pageRange,
+          safeRange,
           modelsReady,
+          canOCR,
           runOCR,
           runLayout,
           setP
@@ -212,10 +238,10 @@ export function useConverter(): UseConverterReturn {
         // ── Step 3: Build output file ──────────────────────────────
         setStatus("building");
         const FORMAT_LABELS: Record<OutputFormat, string> = { docx: "Word", xlsx: "Excel", pptx: "PowerPoint", txt: "Text" };
-        setP(82, `Building ${FORMAT_LABELS[outputFormat]} document...`);
+        setP(82, `Building ${FORMAT_LABELS[safeFormat]} document...`);
 
         const baseName = file.name.replace(/\.pdf$/i, "");
-        await dispatchBuild(outputFormat, processedPages, baseName);
+        await dispatchBuild(safeFormat, processedPages, baseName);
 
         setP(100, "Done!");
         setStatus("done");
@@ -245,14 +271,22 @@ export function useConverter(): UseConverterReturn {
   }, []);
 
   const runBatch = useCallback(async () => {
-    const pro = isProUser();
-    if (!pro) {
+    if (!hasFeature("batch")) {
+      setLimitReason("batch");
       setStatus("limit_reached");
       return;
     }
 
     const pending = batchJobs.filter((j) => j.status === "queued");
     if (pending.length === 0) return;
+
+    const canOCR   = hasFeature("ocr");
+    const canXlsx  = hasFeature("xlsx");
+    const canPptx  = hasFeature("pptx");
+    const safeFormat: OutputFormat =
+      (outputFormat === "xlsx" && !canXlsx) ? "docx" :
+      (outputFormat === "pptx" && !canPptx) ? "docx" :
+      outputFormat;
 
     setStatus("analyzing");
 
@@ -271,18 +305,19 @@ export function useConverter(): UseConverterReturn {
           parsed,
           null,
           modelsReady,
+          canOCR,
           runOCR,
           runLayout,
           (pct, stage) => setP(pct, `${job.file.name}: ${stage}`)
         );
 
         const baseName = job.file.name.replace(/\.pdf$/i, "");
-        await dispatchBuild(outputFormat, processedPages, baseName);
+        await dispatchBuild(safeFormat, processedPages, baseName);
 
         setBatchJobs((prev) =>
           prev.map((j) =>
             j.id === job.id
-              ? { ...j, status: "done" as const, fileName: `${baseName}.${outputFormat}` }
+              ? { ...j, status: "done" as const, fileName: `${baseName}.${safeFormat}` }
               : j
           )
         );
@@ -308,6 +343,7 @@ export function useConverter(): UseConverterReturn {
     setTotalPages(0);
     setPageRange(null);
     setBatchJobs([]);
+    setLimitReason("conversion_limit");
   }, []);
 
   return {
@@ -322,7 +358,7 @@ export function useConverter(): UseConverterReturn {
     canUseBatch: hasFeature("batch"),
     canUseXlsx: hasFeature("xlsx"),
     canUsePptx: hasFeature("pptx"),
-    canUsePageRange: hasFeature("unlimited"),
+    canUsePageRange: hasFeature("page_range"),
     workerReady: modelsReady,
     workerLoading: workerStatus === "loading_models",
     workerProgress,
@@ -340,5 +376,6 @@ export function useConverter(): UseConverterReturn {
     removeBatchJob,
     runBatch,
     reset,
+    limitReason,
   };
 }

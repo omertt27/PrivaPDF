@@ -1,11 +1,15 @@
 "use client";
-// usePdfTools.ts — state machine for PDF Merge / Split / Compress / Unlock
+// usePdfTools.ts — state machine for PDF Merge / Split / Compress / Unlock / Redact / Privilege Log
 
 import { useState, useCallback } from "react";
-import { mergePDFs, splitPDF, compressPDF, unlockPDF } from "@/lib/pdf-tools";
-import { consumeToolUse, getRemainingToolUses, isPaidPlan } from "@/lib/usage-gate";
+import {
+  mergePDFs, splitPDF, compressPDF, unlockPDF,
+  redactPDF, extractPrivilegeLog, renderPDFPages,
+  type RedactionRect, type RenderedPage, type PrivilegeLogEntry,
+} from "@/lib/pdf-tools";
+import { consumeToolUse, getRemainingToolUses, isPaidPlan, hasFeature } from "@/lib/usage-gate";
 
-export type ToolMode = "merge" | "split" | "compress" | "unlock";
+export type ToolMode = "merge" | "split" | "compress" | "unlock" | "redact" | "privilege_log";
 export type ToolStatus = "idle" | "processing" | "done" | "error" | "limit_reached";
 
 export interface UsePdfToolsReturn {
@@ -23,7 +27,7 @@ export interface UsePdfToolsReturn {
   splitFile: File | null;
   setSplitFile: (f: File | null) => void;
   splitTotalPages: number;
-  splitPageList: string; // comma/range string e.g. "1,3,5-8"
+  splitPageList: string;
   setSplitPageList: (s: string) => void;
   runSplit: () => Promise<void>;
   // Compress
@@ -38,6 +42,20 @@ export interface UsePdfToolsReturn {
   unlockPassword: string;
   setUnlockPassword: (p: string) => void;
   runUnlock: () => Promise<void>;
+  // Redact (Legal)
+  redactFile: File | null;
+  setRedactFile: (f: File | null) => void;
+  redactPages: RenderedPage[];
+  redactRects: RedactionRect[];
+  addRedactRect: (r: RedactionRect) => void;
+  removeRedactRect: (idx: number) => void;
+  clearRedactRects: () => void;
+  runRedact: () => Promise<void>;
+  // Privilege Log (Legal)
+  privLogFile: File | null;
+  setPrivLogFile: (f: File | null) => void;
+  privLogEntries: PrivilegeLogEntry[];
+  runPrivilegeLog: () => Promise<void>;
   // General
   reset: () => void;
 }
@@ -81,6 +99,15 @@ export function usePdfTools(): UsePdfToolsReturn {
   // Unlock state
   const [unlockFile, setUnlockFile] = useState<File | null>(null);
   const [unlockPassword, setUnlockPassword] = useState("");
+
+  // Redact state
+  const [redactFile, setRedactFileState] = useState<File | null>(null);
+  const [redactPages, setRedactPages] = useState<RenderedPage[]>([]);
+  const [redactRects, setRedactRects] = useState<RedactionRect[]>([]);
+
+  // Privilege log state
+  const [privLogFile, setPrivLogFileState] = useState<File | null>(null);
+  const [privLogEntries, setPrivLogEntries] = useState<PrivilegeLogEntry[]>([]);
 
   const setP = (percent: number, stage: string) => setProgress({ percent, stage });
 
@@ -203,12 +230,80 @@ export function usePdfTools(): UsePdfToolsReturn {
     }
   }, [unlockFile, unlockPassword]);
 
+  // ── Redact ───────────────────────────────────────────────────────────────
+  const setRedactFile = useCallback(async (f: File | null) => {
+    setRedactFileState(f);
+    setRedactPages([]);
+    setRedactRects([]);
+    if (!f) return;
+    setStatus("processing");
+    setError(null);
+    try {
+      const pages = await renderPDFPages(f, 1.5, setP);
+      setRedactPages(pages);
+      setStatus("idle");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setStatus("error");
+    }
+  }, []);
+
+  const addRedactRect = useCallback((r: RedactionRect) => {
+    setRedactRects((prev) => [...prev, r]);
+  }, []);
+
+  const removeRedactRect = useCallback((idx: number) => {
+    setRedactRects((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const clearRedactRects = useCallback(() => setRedactRects([]), []);
+
+  const runRedact = useCallback(async () => {
+    if (!redactFile || redactPages.length === 0) { setError("No PDF loaded."); return; }
+    if (redactRects.length === 0) { setError("Mark at least one area to redact."); return; }
+    if (!hasFeature("redaction")) { setStatus("limit_reached"); return; }
+    setStatus("processing");
+    setError(null);
+    try {
+      const baseName = redactFile.name.replace(/\.pdf$/i, "");
+      await redactPDF(redactPages, redactRects, baseName, setP);
+      setStatus("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setStatus("error");
+    }
+  }, [redactFile, redactPages, redactRects]);
+
+  // ── Privilege Log ────────────────────────────────────────────────────────
+  const setPrivLogFile = useCallback((f: File | null) => {
+    setPrivLogFileState(f);
+    setPrivLogEntries([]);
+  }, []);
+
+  const runPrivilegeLog = useCallback(async () => {
+    if (!privLogFile) { setError("No PDF selected."); return; }
+    if (!hasFeature("privilege_log")) { setStatus("limit_reached"); return; }
+    setStatus("processing");
+    setError(null);
+    try {
+      const entries = await extractPrivilegeLog(privLogFile, setP);
+      setPrivLogEntries(entries);
+      setStatus("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setStatus("error");
+    }
+  }, [privLogFile]);
+
   // ── Reset ────────────────────────────────────────────────────────────────
   const reset = useCallback(() => {
     setStatus("idle");
     setProgress({ percent: 0, stage: "" });
     setError(null);
     setRemainingToolUses(getRemainingToolUses());
+    setRedactPages([]);
+    setRedactRects([]);
+    setPrivLogEntries([]);
   }, []);
 
   return {
@@ -217,6 +312,8 @@ export function usePdfTools(): UsePdfToolsReturn {
     splitFile, setSplitFile: handleSetSplitFile, splitTotalPages, splitPageList, setSplitPageList, runSplit,
     compressFile, setCompressFile, compressQuality, setCompressQuality, runCompress,
     unlockFile, setUnlockFile, unlockPassword, setUnlockPassword, runUnlock,
+    redactFile, setRedactFile, redactPages, redactRects, addRedactRect, removeRedactRect, clearRedactRects, runRedact,
+    privLogFile, setPrivLogFile, privLogEntries, runPrivilegeLog,
     reset,
   };
 }
