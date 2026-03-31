@@ -146,31 +146,27 @@ export default function Home() {
       />
 
       {/* ── NAV ── */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "20px 48px", borderBottom: "1px solid var(--border)",
-        position: "sticky", top: 0, background: "var(--paper)", zIndex: 100,
-      }}>
+      <nav className="nav-root">
         <div style={{ fontFamily: "var(--serif)", fontSize: 22, letterSpacing: "-0.3px" }}>
           Priva<span style={{ color: "var(--accent)" }}>PDF</span>
         </div>
-        <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
+        <div className="nav-links">
           {[["#how", "How it works"], ["#tools", "PDF Tools"], ["#pricing", "Pricing"], ["#faq", "FAQ"]].map(([href, label]) => (
-            <a key={href} href={href} style={{ fontSize: 14, color: "var(--muted)", textDecoration: "none", fontWeight: 400 }}>
+            <a key={href} href={href} className="nav-text-link" style={{ fontSize: 14, color: "var(--muted)", textDecoration: "none", fontWeight: 400 }}>
               {label}
             </a>
           ))}
           <Link href="/tools" style={{
             background: "var(--cream)", color: "var(--ink)", border: "1px solid var(--border)",
             padding: "9px 20px", borderRadius: 6, fontWeight: 500, fontSize: 13,
-            textDecoration: "none",
+            textDecoration: "none", whiteSpace: "nowrap",
           }}>
             PDF Tools
           </Link>
           <Link href="/convert" style={{
             background: "var(--ink)", color: "var(--paper)",
             padding: "9px 20px", borderRadius: 6, fontWeight: 500, fontSize: 13,
-            textDecoration: "none",
+            textDecoration: "none", whiteSpace: "nowrap",
           }}>
             Try free
           </Link>
@@ -178,15 +174,9 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ── */}
-      <section style={{
-        display: "grid", gridTemplateColumns: "1fr 1fr",
-        minHeight: "88vh", alignItems: "stretch",
-      }}>
+      <section className="hero-grid">
         {/* Left */}
-        <div style={{
-          padding: "80px 64px 80px 80px", display: "flex", flexDirection: "column",
-          justifyContent: "center", borderRight: "1px solid var(--border)",
-        }}>
+        <div className="hero-left">
           <div className="animate-fade-up" style={{
             fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
             color: "var(--accent)", marginBottom: 24, display: "flex", alignItems: "center", gap: 8,
@@ -232,10 +222,7 @@ export default function Home() {
             </Link>
           </div>
 
-          <div className="animate-fade-up" style={{
-            marginTop: 48, paddingTop: 32, borderTop: "1px solid var(--border)",
-            display: "flex", gap: 32, animationDelay: "0.5s",
-          }}>
+          <div className="animate-fade-up hero-stats" style={{ animationDelay: "0.5s" }}>
             {[["0 bytes", "sent to any server"], ["~2 sec", "avg. conversion time"], ["4", "output formats"], ["4", "free PDF tools"]].map(([num, label]) => (
               <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontFamily: "var(--serif)", fontSize: 22, letterSpacing: "-0.5px" }}>{num}</span>
@@ -246,10 +233,7 @@ export default function Home() {
         </div>
 
         {/* Right — drop zone */}
-        <div className="animate-fade-up" style={{
-          background: "var(--cream)", display: "flex", alignItems: "center",
-          justifyContent: "center", padding: 60, animationDelay: "0.3s",
-        }}>
+        <div className="animate-fade-up hero-right" style={{ animationDelay: "0.3s" }}>
           <div style={{
             background: "var(--paper)", border: "1.5px dashed var(--border)",
             borderRadius: 16, padding: "56px 48px", textAlign: "center",
@@ -299,7 +283,7 @@ export default function Home() {
       </section>
 
       {/* ── HOW IT WORKS ── */}
-      <section id="how" style={{ padding: "96px 80px" }}>
+      <section id="how" className="section-pad">
         <div style={{
           fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
           color: "var(--accent)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8,
@@ -310,10 +294,7 @@ export default function Home() {
         <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px,4vw,48px)", lineHeight: 1.1, letterSpacing: -1, marginBottom: 56, maxWidth: 560 }}>
           Three steps. Zero uploads.
         </h2>
-        <div style={{
-          display: "grid", gridTemplateColumns: "repeat(3,1fr)",
-          border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden",
-        }}>
+        <div className="how-grid">
           {[
             { n: "01", title: "Drop your PDF", badge: "100% local", desc: "Drag any PDF into the converter. Your file is read directly by your browser — it never touches our servers or any third party." },
             { n: "02", title: "Browser converts it", badge: "WebGPU powered", desc: "Text PDFs convert in ~2 seconds. Scanned documents use on-device AI — downloaded once, cached forever, works offline." },
@@ -337,7 +318,7 @@ export default function Home() {
       </section>
 
       {/* ── PDF TOOLS SECTION ── */}
-      <section id="tools" style={{ padding: "96px 80px", background: "var(--cream)", borderTop: "1px solid var(--border)" }}>
+      <section id="tools" className="section-pad" style={{ background: "var(--cream)", borderTop: "1px solid var(--border)" }}>
         <div style={{
           fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
           color: "var(--accent)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8,
@@ -358,10 +339,7 @@ export default function Home() {
             Open PDF Tools →
           </Link>
         </div>
-        <div style={{
-          display: "grid", gridTemplateColumns: "repeat(2, 1fr)",
-          gap: 0, border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "var(--paper)",
-        }}>
+        <div className="tools-grid">
           {[
             {
               icon: "⊕",
@@ -416,8 +394,8 @@ export default function Home() {
       </section>
 
       {/* ── OFFLINE / PWA ── */}
-      <section style={{ padding: "96px 80px", background: "var(--ink)", color: "var(--paper)" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "center" }}>
+      <section className="section-pad" style={{ background: "var(--ink)", color: "var(--paper)" }}>
+        <div className="offline-grid">
           {/* Left — copy */}
           <div>
             <div style={{
@@ -514,13 +492,13 @@ export default function Home() {
       </section>
 
       {/* ── SOCIAL PROOF ── */}
-      <section style={{ padding: "72px 80px", background: "var(--paper)", borderBottom: "1px solid var(--border)" }}>
+      <section className="section-pad-sm" style={{ background: "var(--paper)", borderBottom: "1px solid var(--border)" }}>
         <div style={{ textAlign: "center", marginBottom: 48 }}>
           <p style={{ fontSize: 13, color: "var(--muted)", fontWeight: 500, letterSpacing: 1, textTransform: "uppercase" }}>
             Built for professionals who can&apos;t afford to upload sensitive documents to the cloud
           </p>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 0, border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden" }}>
+        <div className="proof-grid">
           {[
             { icon: "⚖️", sector: "Legal", stat: "Attorney-client privilege", note: "Uploading client files to third-party servers can breach confidentiality obligations." },
             { icon: "🏥", sector: "Healthcare", stat: "HIPAA compliance", note: "Patient records processed locally means zero risk of cloud data exposure." },
@@ -541,7 +519,7 @@ export default function Home() {
       </section>
 
       {/* ── COMPARISON ── */}
-      <section style={{ padding: "96px 80px", background: "var(--cream)" }}>
+      <section className="section-pad" style={{ background: "var(--cream)" }}>
         <div style={{
           fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
           color: "var(--accent)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8,
@@ -552,7 +530,7 @@ export default function Home() {
         <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px,4vw,48px)", lineHeight: 1.1, letterSpacing: -1, marginBottom: 48, maxWidth: 560 }}>
           Most converters see your files.<br />We don&apos;t.
         </h2>
-        <div style={{ overflowX: "auto" }}>
+        <div className="comparison-wrap" style={{ overflowX: "auto" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", background: "var(--paper)" }}>
             <thead>
               <tr>
@@ -618,7 +596,7 @@ export default function Home() {
       </section>
 
       {/* ── FOR LAWYERS / HIGH-LTV ── */}
-      <section style={{ padding: "96px 80px", background: "var(--ink)", color: "var(--paper)" }}>
+      <section className="section-pad" style={{ background: "var(--ink)", color: "var(--paper)" }}>
         <div style={{ maxWidth: 800, margin: "0 auto" }}>
           <div style={{
             fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
@@ -640,7 +618,7 @@ export default function Home() {
             where a single upload to the wrong server is a liability. PrivaPDF makes that risk
             physically impossible — the conversion engine runs in your browser, not on our infrastructure.
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 1, background: "rgba(255,255,255,0.08)", borderRadius: 16, overflow: "hidden" }}>
+          <div className="hltv-grid">
             {[
               {
                 icon: "⚖️",
@@ -689,7 +667,7 @@ export default function Home() {
       </section>
 
       {/* ── PRICING ── */}
-      <section id="pricing" style={{ padding: "96px 80px" }}>
+      <section id="pricing" className="section-pad">
         <div style={{
           fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
           color: "var(--accent)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8,
@@ -706,7 +684,7 @@ export default function Home() {
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+        <div className="pricing-grid">
 
           {/* ── FREE ── */}
           <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 32, background: "var(--paper)", display: "flex", flexDirection: "column" }}>
@@ -864,7 +842,7 @@ export default function Home() {
       </section>
 
       {/* ── FAQ ── */}
-      <section id="faq" style={{ padding: "96px 80px", background: "var(--cream)" }}>
+      <section id="faq" className="section-pad" style={{ background: "var(--cream)" }}>
         <div style={{
           fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
           color: "var(--accent)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8,
@@ -875,10 +853,7 @@ export default function Home() {
         <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px,4vw,48px)", lineHeight: 1.1, letterSpacing: -1, marginBottom: 48, maxWidth: 560 }}>
           Common questions
         </h2>
-        <div style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr",
-          border: "1px solid var(--border)", borderRadius: 16, overflow: "hidden", background: "var(--paper)",
-        }}>
+        <div className="faq-grid">
           {faqs.map((item, i) => (
             <div key={i} style={{
               padding: "32px 36px",
@@ -893,10 +868,8 @@ export default function Home() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{
-        padding: "48px 80px", borderTop: "1px solid var(--border)",
-      }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 32, marginBottom: 32 }}>
+      <footer className="section-pad-sm" style={{ borderTop: "1px solid var(--border)" }}>
+        <div className="footer-top">
           <div>
             <div style={{ fontFamily: "var(--serif)", fontSize: 20, marginBottom: 8 }}>
               Priva<span style={{ color: "var(--accent)" }}>PDF</span>
@@ -905,7 +878,7 @@ export default function Home() {
               The only PDF converter where your files are architecturally impossible to access — even by us.
             </p>
           </div>
-          <div style={{ display: "flex", gap: 48, flexWrap: "wrap" }}>
+          <div className="footer-links">
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>Product</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -932,7 +905,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 24, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+        <div className="footer-bottom">
           <div style={{ fontSize: 12, color: "var(--muted)" }}>
             © {new Date().getFullYear()} PrivaPDF — Your files, your device.
           </div>

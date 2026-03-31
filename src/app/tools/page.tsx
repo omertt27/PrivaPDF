@@ -31,11 +31,7 @@ export default function ToolsPage() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--paper)" }}>
       {/* ── Nav ── */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "20px 48px", borderBottom: "1px solid var(--border)",
-        position: "sticky", top: 0, background: "var(--paper)", zIndex: 100,
-      }}>
+      <nav className="nav-root">
         <Link href="/" style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", textDecoration: "none" }}>
           Priva<span style={{ color: "var(--accent)" }}>PDF</span>
         </Link>
@@ -50,7 +46,7 @@ export default function ToolsPage() {
         </div>
       </nav>
 
-      <main style={{ maxWidth: 820, margin: "0 auto", padding: "56px 24px" }}>
+      <main style={{ maxWidth: 820, margin: "0 auto", padding: "56px 24px", paddingLeft: "max(16px, env(safe-area-inset-left))", paddingRight: "max(16px, env(safe-area-inset-right))" }}>
         {/* Header */}
         <div style={{ marginBottom: 40, textAlign: "center" }}>
           <div style={{
@@ -72,11 +68,7 @@ export default function ToolsPage() {
         </div>
 
         {/* Tool tabs */}
-        <div style={{
-          display: "grid", gridTemplateColumns: "repeat(4,1fr)",
-          border: "1px solid var(--border)", borderRadius: 14, overflow: "hidden",
-          marginBottom: 32, background: "var(--cream)",
-        }}>
+        <div className="tools-tab-grid">
           {TABS.map((tab, i) => (
             <button
               key={tab.id}

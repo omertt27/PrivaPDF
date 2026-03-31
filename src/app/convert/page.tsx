@@ -70,16 +70,12 @@ export default function ConvertPage() {
   return (
     <div className="min-h-screen" style={{ background: "var(--paper)" }}>
       {/* ── Nav ─────────────────────────────────────────────────────────────── */}
-      <nav style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "20px 48px", borderBottom: "1px solid var(--border)",
-        position: "sticky", top: 0, background: "var(--paper)", zIndex: 100,
-      }}>
+      <nav className="nav-root">
         <Link href="/" style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", textDecoration: "none", letterSpacing: "-0.3px" }}>
           Priva<span style={{ color: "var(--accent)" }}>PDF</span>
         </Link>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
           <Link href="/tools" style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>PDF Tools</Link>
           {/* GPU badge */}
           {workerReady && (
@@ -119,7 +115,7 @@ export default function ConvertPage() {
         </div>
       )}
 
-      <main style={{ maxWidth: 860, margin: "0 auto", padding: "64px 24px" }}>
+      <main className="convert-main">
         {/* ── Header ─────────────────────────────────────────────────────────── */}
         <div style={{ marginBottom: 40, textAlign: "center" }}>
           <div style={{
@@ -218,13 +214,7 @@ export default function ConvertPage() {
                   <DropZone onFile={convertFile} disabled={false} />
 
                   {/* Options row */}
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: 24,
-                    paddingTop: 24,
-                    borderTop: "1px solid var(--border)",
-                  }}>
+                  <div className="convert-options-grid">
                     {/* Format selector */}
                     <FormatSelector
                       value={outputFormat}
