@@ -9,7 +9,7 @@ import { buildDocx, parseTextBlocks, type ProcessedPage, type TextBlock } from "
 import { buildXlsx } from "@/lib/xlsx-builder";
 import { buildTxt } from "@/lib/txt-builder";
 import { buildPptx } from "@/lib/pptx-builder";
-import { consumeConversion, isProUser, getPlan, getRemainingConversions, PLAN_META, type PlanTier } from "@/lib/usage-gate";
+import { consumeConversion, isProUser, getPlan, getRemainingConversions, hasFeature, PLAN_META, type PlanTier } from "@/lib/usage-gate";
 import { useConverterWorker } from "./useConverterWorker";
 
 export type OutputFormat = "docx" | "xlsx" | "txt" | "pptx";
@@ -45,6 +45,11 @@ export interface UseConverterReturn {
   isPro: boolean;
   plan: PlanTier;
   planMeta: { label: string; color: string; badge: string };
+  canUseOCR: boolean;
+  canUseBatch: boolean;
+  canUseXlsx: boolean;
+  canUsePptx: boolean;
+  canUsePageRange: boolean;
   workerReady: boolean;
   workerLoading: boolean;
   workerProgress: { stage: string; percent: number };
@@ -313,6 +318,11 @@ export function useConverter(): UseConverterReturn {
     isPro: isProUser(),
     plan: getPlan(),
     planMeta: PLAN_META[getPlan()],
+    canUseOCR: hasFeature("ocr"),
+    canUseBatch: hasFeature("batch"),
+    canUseXlsx: hasFeature("xlsx"),
+    canUsePptx: hasFeature("pptx"),
+    canUsePageRange: hasFeature("unlimited"),
     workerReady: modelsReady,
     workerLoading: workerStatus === "loading_models",
     workerProgress,

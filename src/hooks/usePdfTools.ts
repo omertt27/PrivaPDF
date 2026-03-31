@@ -3,14 +3,16 @@
 
 import { useState, useCallback } from "react";
 import { mergePDFs, splitPDF, compressPDF, unlockPDF } from "@/lib/pdf-tools";
+import { consumeToolUse, getRemainingToolUses, isPaidPlan } from "@/lib/usage-gate";
 
 export type ToolMode = "merge" | "split" | "compress" | "unlock";
-export type ToolStatus = "idle" | "processing" | "done" | "error";
+export type ToolStatus = "idle" | "processing" | "done" | "error" | "limit_reached";
 
 export interface UsePdfToolsReturn {
   status: ToolStatus;
   progress: { percent: number; stage: string };
   error: string | null;
+  remainingToolUses: number;
   // Merge
   mergeFiles: File[];
   addMergeFiles: (files: File[]) => void;
@@ -62,6 +64,7 @@ export function usePdfTools(): UsePdfToolsReturn {
   const [status, setStatus] = useState<ToolStatus>("idle");
   const [progress, setProgress] = useState({ percent: 0, stage: "" });
   const [error, setError] = useState<string | null>(null);
+  const [remainingToolUses, setRemainingToolUses] = useState(getRemainingToolUses);
 
   // Merge state
   const [mergeFiles, setMergeFiles] = useState<File[]>([]);
@@ -104,6 +107,11 @@ export function usePdfTools(): UsePdfToolsReturn {
       setError("Add at least 2 PDF files to merge.");
       return;
     }
+    if (!consumeToolUse()) {
+      setStatus("limit_reached");
+      return;
+    }
+    setRemainingToolUses(getRemainingToolUses());
     setStatus("processing");
     setError(null);
     try {
@@ -137,6 +145,11 @@ export function usePdfTools(): UsePdfToolsReturn {
 
   const runSplit = useCallback(async () => {
     if (!splitFile) { setError("No PDF selected."); return; }
+    if (!consumeToolUse()) {
+      setStatus("limit_reached");
+      return;
+    }
+    setRemainingToolUses(getRemainingToolUses());
     setStatus("processing");
     setError(null);
     try {
@@ -154,6 +167,11 @@ export function usePdfTools(): UsePdfToolsReturn {
   // ── Compress ─────────────────────────────────────────────────────────────
   const runCompress = useCallback(async () => {
     if (!compressFile) { setError("No PDF selected."); return; }
+    if (!consumeToolUse()) {
+      setStatus("limit_reached");
+      return;
+    }
+    setRemainingToolUses(getRemainingToolUses());
     setStatus("processing");
     setError(null);
     try {
@@ -169,6 +187,11 @@ export function usePdfTools(): UsePdfToolsReturn {
   const runUnlock = useCallback(async () => {
     if (!unlockFile) { setError("No PDF selected."); return; }
     if (!unlockPassword.trim()) { setError("Please enter the PDF password."); return; }
+    if (!consumeToolUse()) {
+      setStatus("limit_reached");
+      return;
+    }
+    setRemainingToolUses(getRemainingToolUses());
     setStatus("processing");
     setError(null);
     try {
@@ -185,10 +208,11 @@ export function usePdfTools(): UsePdfToolsReturn {
     setStatus("idle");
     setProgress({ percent: 0, stage: "" });
     setError(null);
+    setRemainingToolUses(getRemainingToolUses());
   }, []);
 
   return {
-    status, progress, error,
+    status, progress, error, remainingToolUses,
     mergeFiles, addMergeFiles, removeMergeFile, reorderMergeFiles, runMerge,
     splitFile, setSplitFile: handleSetSplitFile, splitTotalPages, splitPageList, setSplitPageList, runSplit,
     compressFile, setCompressFile, compressQuality, setCompressQuality, runCompress,

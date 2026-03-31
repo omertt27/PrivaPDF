@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Merge, Scissors, Minimize2, Unlock, RotateCcw, CheckCircle, AlertCircle, ArrowUp, ArrowDown } from "lucide-react";
 import { usePdfTools } from "@/hooks/usePdfTools";
 import { ProgressBar } from "@/components/ProgressBar";
+import { UpgradeModal } from "@/components/UpgradeModal";
+import { isPaidPlan } from "@/lib/usage-gate";
 
 type ToolTab = "merge" | "split" | "compress" | "unlock";
 
@@ -40,6 +42,11 @@ export default function ToolsPage() {
         <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
           <Link href="/convert" style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>Convert PDF</Link>
           <Link href="/tools" style={{ fontSize: 13, color: "var(--ink)", fontWeight: 500, textDecoration: "none" }}>PDF Tools</Link>
+          {!isPaidPlan() && (
+            <span style={{ fontSize: 13, color: "var(--muted)" }}>
+              {tools.remainingToolUses} free tool {tools.remainingToolUses === 1 ? "use" : "uses"} left today
+            </span>
+          )}
         </div>
       </nav>
 
@@ -176,6 +183,9 @@ export default function ToolsPage() {
           )}
         </div>
       </main>
+
+      {/* ── Upgrade modal when daily tool limit reached ── */}
+      {tools.status === "limit_reached" && <UpgradeModal onClose={tools.reset} />}
     </div>
   );
 }

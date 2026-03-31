@@ -7,6 +7,8 @@ interface FormatSelectorProps {
   value: OutputFormat;
   onChange: (f: OutputFormat) => void;
   isPro: boolean;
+  canUseXlsx?: boolean;
+  canUsePptx?: boolean;
 }
 
 const FORMATS: {
@@ -77,7 +79,7 @@ const FORMATS: {
   },
 ];
 
-export function FormatSelector({ value, onChange, isPro }: FormatSelectorProps) {
+export function FormatSelector({ value, onChange, isPro, canUseXlsx, canUsePptx }: FormatSelectorProps) {
   return (
     <div>
       <p style={{ fontSize: 12, fontWeight: 500, color: "var(--muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
@@ -85,7 +87,12 @@ export function FormatSelector({ value, onChange, isPro }: FormatSelectorProps) 
       </p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         {FORMATS.map((fmt) => {
-          const locked = fmt.proOnly && !isPro;
+          // Use fine-grained feature flags when provided, fall back to isPro
+          const locked =
+            fmt.proOnly &&
+            (fmt.id === "xlsx" ? !(canUseXlsx ?? isPro) :
+             fmt.id === "pptx" ? !(canUsePptx ?? isPro) :
+             !isPro);
           const active = value === fmt.id;
 
           return (

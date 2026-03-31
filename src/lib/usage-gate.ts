@@ -2,10 +2,12 @@
 // Uses localStorage — easy to bypass but sufficient friction for honest users.
 // Plan is set locally after a successful LemonSqueezy checkout redirect.
 
-const STORAGE_KEY  = "pdfconvert_usage";
-const PLAN_KEY     = "pdfconvert_plan";      // "free" | "individual" | "pro" | "legal"
-const SESSION_KEY  = "pdfconvert_session";
-const DAILY_FREE_LIMIT = 3;
+const STORAGE_KEY       = "pdfconvert_usage";
+const TOOLS_STORAGE_KEY = "pdfconvert_tools_usage";
+const PLAN_KEY          = "pdfconvert_plan";      // "free" | "individual" | "pro" | "legal"
+const SESSION_KEY       = "pdfconvert_session";
+const DAILY_FREE_LIMIT       = 3;
+const DAILY_FREE_TOOLS_LIMIT = 3;
 
 export type PlanTier = "free" | "individual" | "pro" | "legal";
 
@@ -85,6 +87,40 @@ export function consumeConversion(): boolean {
       if (new Date(key) < cutoff) delete data[key];
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
+  } catch {
+    return true; // fail open
+  }
+}
+
+// ─── Tool usage counting (free tier: merge/split/compress/unlock) ─────────────
+
+export function getRemainingToolUses(): number {
+  if (isPaidPlan()) return Infinity;
+  try {
+    const data: UsageRecord = JSON.parse(localStorage.getItem(TOOLS_STORAGE_KEY) || "{}");
+    const used = data[getTodayKey()] || 0;
+    return Math.max(0, DAILY_FREE_TOOLS_LIMIT - used);
+  } catch {
+    return DAILY_FREE_TOOLS_LIMIT;
+  }
+}
+
+export function consumeToolUse(): boolean {
+  if (isPaidPlan()) return true;
+  try {
+    const data: UsageRecord = JSON.parse(localStorage.getItem(TOOLS_STORAGE_KEY) || "{}");
+    const today = getTodayKey();
+    const used = data[today] || 0;
+    if (used >= DAILY_FREE_TOOLS_LIMIT) return false;
+
+    data[today] = used + 1;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 7);
+    for (const key of Object.keys(data)) {
+      if (new Date(key) < cutoff) delete data[key];
+    }
+    localStorage.setItem(TOOLS_STORAGE_KEY, JSON.stringify(data));
     return true;
   } catch {
     return true; // fail open

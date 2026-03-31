@@ -33,6 +33,11 @@ export default function ConvertPage() {
     isPro,
     plan,
     planMeta,
+    canUseOCR,
+    canUseBatch,
+    canUseXlsx,
+    canUsePptx,
+    canUsePageRange,
     workerReady,
     workerLoading,
     workerProgress,
@@ -188,7 +193,7 @@ export default function ConvertPage() {
               ) : (
                 <>
                   <Layers size={14} />
-                  Batch{!isPro && <span style={{ marginLeft: 4, fontSize: 10, background: "var(--accent)", color: "#fff", padding: "1px 5px", borderRadius: 20, fontWeight: 600 }}>PRO</span>}
+                  Batch{!canUseBatch && <span style={{ marginLeft: 4, fontSize: 10, background: "var(--accent)", color: "#fff", padding: "1px 5px", borderRadius: 20, fontWeight: 600 }}>PRO</span>}
                 </>
               )}
             </button>
@@ -221,10 +226,26 @@ export default function ConvertPage() {
                     borderTop: "1px solid var(--border)",
                   }}>
                     {/* Format selector */}
-                    <FormatSelector value={outputFormat} onChange={setOutputFormat} isPro={isPro} />
+                    <FormatSelector
+                      value={outputFormat}
+                      onChange={setOutputFormat}
+                      isPro={isPro}
+                      canUseXlsx={canUseXlsx}
+                      canUsePptx={canUsePptx}
+                    />
 
-                    {/* Page range — only shown after a file is selected if we know total pages */}
-                    {totalPages > 0 ? (
+                    {/* Page range — only shown for paid plans after a file is selected */}
+                    {!canUsePageRange ? (
+                      <div>
+                        <p style={{ fontSize: 12, fontWeight: 500, color: "var(--muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
+                          Page Range
+                        </p>
+                        <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+                          Page range selection is available on paid plans.{" "}
+                          <a href="/#pricing" style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 500 }}>Upgrade →</a>
+                        </p>
+                      </div>
+                    ) : totalPages > 0 ? (
                       <PageRangePicker
                         totalPages={totalPages}
                         value={pageRange}
@@ -247,7 +268,15 @@ export default function ConvertPage() {
                     <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14, fontWeight: 500 }}>
                       🔍 Have a <strong style={{ color: "var(--ink)" }}>scanned PDF</strong>? Enable AI OCR:
                     </p>
-                    {!workerReady && !workerLoading && (
+                    {!canUseOCR ? (
+                      <div style={{
+                        padding: "12px 16px", background: "var(--cream)", borderRadius: 10,
+                        border: "1px solid var(--border)", fontSize: 13, color: "var(--muted)", lineHeight: 1.6,
+                      }}>
+                        <strong style={{ color: "var(--ink)" }}>AI OCR for scanned PDFs</strong> is available on paid plans.{" "}
+                        <a href="/#pricing" style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 500 }}>Upgrade to unlock →</a>
+                      </div>
+                    ) : !workerReady && !workerLoading ? (
                       <button
                         onClick={loadAIModels}
                         style={{
@@ -259,16 +288,14 @@ export default function ConvertPage() {
                       >
                         Load AI OCR Engine (~500 MB, one-time download)
                       </button>
-                    )}
-                    {workerLoading && (
+                    ) : workerLoading ? (
                       <WarmupScreen
                         stage={workerProgress.stage}
                         percent={workerProgress.percent}
                         gpuDevice={gpuDevice}
                         onSkip={() => {}}
                       />
-                    )}
-                    {workerReady && (
+                    ) : (
                       <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>
                         <CheckCircle size={16} />
                         AI OCR engine ready — scanned PDFs fully supported
@@ -362,41 +389,77 @@ export default function ConvertPage() {
           {/* ── BATCH TAB ── */}
           {activeTab === "batch" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {/* Format selector for batch */}
-              <FormatSelector value={outputFormat} onChange={setOutputFormat} isPro={isPro} />
-
-              <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
-                <BatchQueue
-                  jobs={batchJobs}
-                  onRemove={removeBatchJob}
-                  onAddFiles={addBatchFiles}
-                  onRun={runBatch}
-                  isRunning={isBatchRunning}
-                  isPro={isPro}
-                />
-              </div>
-
-              {/* Batch progress */}
-              {isBatchRunning && (
-                <div style={{ paddingTop: 8 }}>
-                  <ProgressBar percent={progress.percent} stage={progress.stage} color="green" />
-                </div>
-              )}
-
-              {/* Batch done summary */}
-              {status === "done" && activeTab === "batch" && (
+              {!canUseBatch ? (
                 <div style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "16px 20px",
-                  background: "#e8f5e9",
-                  borderRadius: 12,
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 16,
+                  padding: "48px 32px", textAlign: "center",
+                  background: "var(--cream)", borderRadius: 16, border: "1px solid var(--border)",
                 }}>
-                  <CheckCircle size={20} color="var(--accent)" />
-                  <div>
-                    <p style={{ fontSize: 14, fontWeight: 500, color: "var(--accent)", marginBottom: 2 }}>Batch complete!</p>
-                    <p style={{ fontSize: 13, color: "var(--muted)" }}>All files downloaded. Check your Downloads folder.</p>
+                  <div style={{
+                    width: 52, height: 52, background: "var(--accent-light)", borderRadius: 14,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Layers size={24} color="var(--accent)" />
                   </div>
+                  <div>
+                    <h3 style={{ fontFamily: "var(--serif)", fontSize: 20, marginBottom: 8 }}>Batch conversion is a paid feature</h3>
+                    <p style={{ fontSize: 14, color: "var(--muted)", lineHeight: 1.6, maxWidth: 380 }}>
+                      Convert multiple PDFs at once with the Individual, Pro, or Legal plan.
+                    </p>
+                  </div>
+                  <a href="/#pricing" style={{
+                    display: "inline-block", background: "var(--ink)", color: "var(--paper)",
+                    padding: "12px 24px", borderRadius: 8, fontSize: 14, fontWeight: 500,
+                    textDecoration: "none",
+                  }}>
+                    See plans →
+                  </a>
                 </div>
+              ) : (
+                <>
+                  {/* Format selector for batch */}
+                  <FormatSelector
+                    value={outputFormat}
+                    onChange={setOutputFormat}
+                    isPro={isPro}
+                    canUseXlsx={canUseXlsx}
+                    canUsePptx={canUsePptx}
+                  />
+
+                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+                    <BatchQueue
+                      jobs={batchJobs}
+                      onRemove={removeBatchJob}
+                      onAddFiles={addBatchFiles}
+                      onRun={runBatch}
+                      isRunning={isBatchRunning}
+                      isPro={isPro}
+                    />
+                  </div>
+
+                  {/* Batch progress */}
+                  {isBatchRunning && (
+                    <div style={{ paddingTop: 8 }}>
+                      <ProgressBar percent={progress.percent} stage={progress.stage} color="green" />
+                    </div>
+                  )}
+
+                  {/* Batch done summary */}
+                  {status === "done" && activeTab === "batch" && (
+                    <div style={{
+                      display: "flex", alignItems: "center", gap: 12,
+                      padding: "16px 20px",
+                      background: "#e8f5e9",
+                      borderRadius: 12,
+                    }}>
+                      <CheckCircle size={20} color="var(--accent)" />
+                      <div>
+                        <p style={{ fontSize: 14, fontWeight: 500, color: "var(--accent)", marginBottom: 2 }}>Batch complete!</p>
+                        <p style={{ fontSize: 13, color: "var(--muted)" }}>All files downloaded. Check your Downloads folder.</p>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
