@@ -16,8 +16,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
-  // Silence the "webpack config but no turbopack config" error in Next.js 16
-  turbopack: {},
+  // Tailwind CSS v4 + Turbopack: stub out Node built-ins that pako/jszip reference
+  turbopack: {
+    resolveAlias: {
+      "./lib/zlib/constants": "./src/lib/empty-stub.js",
+      "./zlib/constants":     "./src/lib/empty-stub.js",
+      "./zlib/deflate":       "./src/lib/empty-stub.js",
+      "./zlib/gzheader":      "./src/lib/empty-stub.js",
+      "./zlib/inflate":       "./src/lib/empty-stub.js",
+      "./zlib/zstream":       "./src/lib/empty-stub.js",
+    },
+  },
 };
 
 export default nextConfig;

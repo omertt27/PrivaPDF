@@ -18,7 +18,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://privapdf.com"),
+  metadataBase: new URL("https://privapdf.net"),
   title: {
     default: "PrivaPDF — PDF Converter That Never Uploads Your Files",
     template: "%s | PrivaPDF",
@@ -28,12 +28,24 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: [
+      { url: "/icon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icon-48.png", sizes: "48x48", type: "image/png" },
+      { url: "/icon.svg",    type: "image/svg+xml" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
+    shortcut: "/icon-32.png",
+  },
   openGraph: {
     title: "PrivaPDF — PDF Converter That Never Uploads Your Files",
     description:
       "Zero uploads. Zero servers. Works offline. Your files are processed entirely in your browser — not ours.",
     type: "website",
-    url: "https://privapdf.com",
+    url: "https://privapdf.net",
     siteName: "PrivaPDF",
     images: [
       {
@@ -80,7 +92,10 @@ export default function RootLayout({
     <html lang="en" className={`${instrumentSerif.variable} ${dmSans.variable}`}>
       <head>
         <meta name="theme-color" content="#1a472a" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+        <link rel="icon" href="/icon-32.png" sizes="32x32" type="image/png" />
+        <link rel="icon" href="/icon-16.png" sizes="16x16" type="image/png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" />
       </head>
       <body className="min-h-full">
         <ClerkProvider>
