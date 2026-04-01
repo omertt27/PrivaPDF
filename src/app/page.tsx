@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { UserMenuButton } from "@/components/UserMenuButton";
 
 export const metadata: Metadata = {
   title: "PDF to Word Converter — No Upload Required",
@@ -15,24 +16,30 @@ export const metadata: Metadata = {
 };
 
 /* ─── LemonSqueezy helpers ───────────────────────────────────────────────────
-   LemonSqueezy checkout links accept:
-     ?checkout[success_url]=  — where to redirect after payment (must be absolute)
-     ?checkout[cancel_url]=   — where to redirect on cancel
-   After a successful purchase LS appends ?order_id=... to the success_url.
-   We embed ?plan= in the success_url so /success knows which tier was purchased.
+   Variant IDs are read from env vars — set these in your Vercel dashboard:
+     NEXT_PUBLIC_LS_VARIANT_INDIVIDUAL   individual plan
+     NEXT_PUBLIC_LS_VARIANT_PRO_MONTHLY  pro monthly
+     NEXT_PUBLIC_LS_VARIANT_PRO_YEARLY   pro yearly
+     NEXT_PUBLIC_LS_VARIANT_LEGAL        legal plan
 
-   Replace the lemon.squeezy.com/checkout/buy/... slugs with your real variant IDs.
-   Find them in LemonSqueezy → Products → your product → Variants → Share link.
+   checkout[custom][plan] embeds the tier so the LemonSqueezy webhook
+   (/api/webhooks/lemonsqueezy) can read it server-side to validate orders.
+   LemonSqueezy appends ?order_id=... to success_url after purchase.
 ───────────────────────────────────────────────────────────────────────────── */
 const ORIGIN = process.env.NEXT_PUBLIC_URL ?? "https://privapdf.com";
 const mkSuccess = (plan: string) => `${ORIGIN}/success?plan=${plan}`;
 const mkCancel  = () => `${ORIGIN}/#pricing`;
+const mkLSUrl   = (variantId: string, plan: string) =>
+  `https://privapdf.lemonsqueezy.com/checkout/buy/${variantId}` +
+  `?checkout[success_url]=${encodeURIComponent(mkSuccess(plan))}` +
+  `&checkout[cancel_url]=${encodeURIComponent(mkCancel())}` +
+  `&checkout[custom][plan]=${encodeURIComponent(plan)}`;
 
 const LS = {
-  individual: `https://privapdf.lemonsqueezy.com/checkout/buy/your_individual_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("individual"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
-  proMonthly: `https://privapdf.lemonsqueezy.com/checkout/buy/your_pro_monthly_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("pro"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
-  proYearly:  `https://privapdf.lemonsqueezy.com/checkout/buy/your_pro_yearly_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("pro"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
-  legal:      `https://privapdf.lemonsqueezy.com/checkout/buy/your_legal_variant_id?checkout[success_url]=${encodeURIComponent(mkSuccess("legal"))}&checkout[cancel_url]=${encodeURIComponent(mkCancel())}`,
+  individual: mkLSUrl(process.env.NEXT_PUBLIC_LS_VARIANT_INDIVIDUAL ?? "", "individual"),
+  proMonthly: mkLSUrl(process.env.NEXT_PUBLIC_LS_VARIANT_PRO_MONTHLY ?? "", "pro"),
+  proYearly:  mkLSUrl(process.env.NEXT_PUBLIC_LS_VARIANT_PRO_YEARLY  ?? "", "pro"),
+  legal:      mkLSUrl(process.env.NEXT_PUBLIC_LS_VARIANT_LEGAL        ?? "", "legal"),
 };
 
 /* ─── Data ─────────────────────────────────────────────────────────────────── */
@@ -170,6 +177,7 @@ export default function Home() {
           }}>
             Try free
           </Link>
+          <UserMenuButton />
         </div>
       </nav>
 

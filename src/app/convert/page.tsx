@@ -9,6 +9,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import { FormatSelector } from "@/components/FormatSelector";
 import { PageRangePicker } from "@/components/PageRangePicker";
 import { BatchQueue } from "@/components/BatchQueue";
+import { UserMenuButton } from "@/components/UserMenuButton";
 import {
   CheckCircle,
   AlertCircle,
@@ -101,6 +102,7 @@ export default function ConvertPage() {
               {planMeta.badge}
             </span>
           )}
+          <UserMenuButton />
         </div>
       </nav>
 

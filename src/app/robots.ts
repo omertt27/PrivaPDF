@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/success"],   // no need to index the post-payment page
+        disallow: ["/success", "/sign-in", "/sign-up", "/api/"],
       },
     ],
     sitemap: "https://privapdf.com/sitemap.xml",

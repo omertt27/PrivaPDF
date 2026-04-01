@@ -45,17 +45,23 @@ const FEATURES = [
   { icon: <ShieldCheck size={14} />,  text: "Files still never leave your device" },
 ];
 
-// success_url encodes ?plan= so the success page knows which tier to activate.
-// Replace the lemonsqueezy.com/checkout/buy/... slugs with your real variant IDs.
-// LemonSqueezy will append ?order_id=... to the success_url after purchase.
+// Variant IDs come from env vars — set these in your Vercel dashboard:
+//   NEXT_PUBLIC_LS_VARIANT_INDIVIDUAL   (individual plan variant ID)
+//   NEXT_PUBLIC_LS_VARIANT_PRO_MONTHLY  (pro monthly variant ID)
+//   NEXT_PUBLIC_LS_VARIANT_LEGAL        (legal plan variant ID)
+//
+// checkout[custom][plan] embeds the tier in the checkout session so the
+// LemonSqueezy webhook (/api/webhooks/lemonsqueezy) can read it server-side.
+// LemonSqueezy will append ?order_id=... to success_url after purchase.
 const SUCCESS_BASE = typeof window !== "undefined"
   ? `${window.location.origin}/success`
   : "https://privapdf.com/success";
 
-const mkLSUrl = (variantSlug: string, plan: string) =>
-  `https://privapdf.lemonsqueezy.com/checkout/buy/${variantSlug}` +
+const mkLSUrl = (variantId: string, plan: string) =>
+  `https://privapdf.lemonsqueezy.com/checkout/buy/${variantId}` +
   `?checkout[success_url]=${encodeURIComponent(SUCCESS_BASE + "?plan=" + plan)}` +
-  `&checkout[cancel_url]=${encodeURIComponent(SUCCESS_BASE.replace("/success", "/#pricing"))}`;
+  `&checkout[cancel_url]=${encodeURIComponent(SUCCESS_BASE.replace("/success", "/#pricing"))}` +
+  `&checkout[custom][plan]=${encodeURIComponent(plan)}`;
 
 const PLANS = [
   {
@@ -65,7 +71,7 @@ const PLANS = [
     sub: "one-time · yours forever",
     highlight: true,
     cta: "Buy once — $19",
-    href: mkLSUrl("your_individual_variant_id", "individual"),
+    href: mkLSUrl(process.env.NEXT_PUBLIC_LS_VARIANT_INDIVIDUAL ?? "", "individual"),
   },
   {
     id: "pro",
@@ -74,7 +80,7 @@ const PLANS = [
     sub: "/mo · or $99/yr",
     highlight: false,
     cta: "Start Pro",
-    href: mkLSUrl("your_pro_monthly_variant_id", "pro"),
+    href: mkLSUrl(process.env.NEXT_PUBLIC_LS_VARIANT_PRO_MONTHLY ?? "", "pro"),
   },
   {
     id: "legal",
@@ -83,7 +89,7 @@ const PLANS = [
     sub: "/mo · redaction + OCR",
     highlight: false,
     cta: "Start Legal",
-    href: mkLSUrl("your_legal_variant_id", "legal"),
+    href: mkLSUrl(process.env.NEXT_PUBLIC_LS_VARIANT_LEGAL ?? "", "legal"),
   },
 ] as const;
 

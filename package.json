@@ -1,5 +1,5 @@
 {
-  "name": "temp-setup",
+  "name": "privapdf",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,8 +9,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.0.8",
     "@huggingface/transformers": "^4.0.0",
     "@types/file-saver": "^2.0.7",
+    "@vercel/kv": "^3.0.0",
     "clsx": "^2.1.1",
     "docx": "^9.6.1",
     "file-saver": "^2.0.5",

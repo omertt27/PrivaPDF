@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Instrument_Serif, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const instrumentSerif = Instrument_Serif({
   variable: "--font-serif",
@@ -82,8 +83,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className="min-h-full">
-        <ServiceWorkerRegistrar />
-        {children}
+        <ClerkProvider>
+          <ServiceWorkerRegistrar />
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );

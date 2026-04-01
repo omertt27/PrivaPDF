@@ -6,8 +6,11 @@ const STORAGE_KEY       = "pdfconvert_usage";
 const TOOLS_STORAGE_KEY = "pdfconvert_tools_usage";
 const PLAN_KEY          = "pdfconvert_plan";      // "free" | "individual" | "pro" | "legal"
 const SESSION_KEY       = "pdfconvert_session";
+const TRIAL_KEY         = "pdfconvert_trial_start"; // ISO date string
+const EMAIL_KEY         = "pdfconvert_email";
 const DAILY_FREE_LIMIT       = 3;
 const DAILY_FREE_TOOLS_LIMIT = 3;
+const TRIAL_DAYS             = 7;
 
 export type PlanTier = "free" | "individual" | "pro" | "legal";
 
@@ -69,9 +72,9 @@ export function getRemainingConversions(): number {
   try {
     const data: UsageRecord = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const used = data[getTodayKey()] || 0;
-    return Math.max(0, DAILY_FREE_LIMIT - used);
+    return Math.max(0, getDailyLimit() - used);
   } catch {
-    return DAILY_FREE_LIMIT;
+    return getDailyLimit();
   }
 }
 
@@ -81,7 +84,8 @@ export function consumeConversion(): boolean {
     const data: UsageRecord = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
     const today = getTodayKey();
     const used = data[today] || 0;
-    if (used >= DAILY_FREE_LIMIT) return false;
+    const limit = getDailyLimit();
+    if (used >= limit) return false;
 
     data[today] = used + 1;
     // Clean up dates older than 7 days
@@ -147,4 +151,56 @@ export function activateProAccess(sessionId: string): void {
   activatePlan("pro", sessionId);
 }
 
-export const DAILY_LIMIT = DAILY_FREE_LIMIT;
+// ─── Trial period ──────────────────────────────────────────────────────────────
+
+/**
+ * Starts a free trial (stored locally). Called when the user first opens the app.
+ * Safe to call multiple times — only sets the key if it doesn't exist yet.
+ */
+export function maybeStartTrial(): void {
+  try {
+    if (!localStorage.getItem(TRIAL_KEY)) {
+      localStorage.setItem(TRIAL_KEY, new Date().toISOString());
+    }
+  } catch { /* ignore */ }
+}
+
+/**
+ * Returns the number of trial days remaining (0 if expired or never started).
+ * Only relevant for free users.
+ */
+export function getTrialDaysLeft(): number {
+  if (isPaidPlan()) return 0;
+  try {
+    const start = localStorage.getItem(TRIAL_KEY);
+    if (!start) return 0;
+    const started = new Date(start);
+    const elapsed = (Date.now() - started.getTime()) / (1000 * 60 * 60 * 24);
+    return Math.max(0, Math.ceil(TRIAL_DAYS - elapsed));
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * During the trial window, free users get an extra +2 conversions/day (total 5).
+ */
+export function getDailyLimit(): number {
+  if (isPaidPlan()) return Infinity;
+  const daysLeft = getTrialDaysLeft();
+  return daysLeft > 0 ? DAILY_FREE_LIMIT + 2 : DAILY_FREE_LIMIT;
+}
+
+// ─── Email capture ─────────────────────────────────────────────────────────────
+
+export function getCapturedEmail(): string | null {
+  try { return localStorage.getItem(EMAIL_KEY); } catch { return null; }
+}
+
+export function setCapturedEmail(email: string): void {
+  try { localStorage.setItem(EMAIL_KEY, email.trim().toLowerCase()); } catch { /* ignore */ }
+}
+
+export function hasCapturedEmail(): boolean {
+  return !!getCapturedEmail();
+}

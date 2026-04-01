@@ -6,6 +6,7 @@ import { Merge, Scissors, Minimize2, Unlock, RotateCcw, CheckCircle, AlertCircle
 import { usePdfTools } from "@/hooks/usePdfTools";
 import { ProgressBar } from "@/components/ProgressBar";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { UserMenuButton } from "@/components/UserMenuButton";
 import { isPaidPlan, hasFeature, getPlan } from "@/lib/usage-gate";
 import type { RedactionRect } from "@/lib/pdf-tools";
 
@@ -58,6 +59,7 @@ export default function ToolsPage() {
               {tools.remainingToolUses} free tool {tools.remainingToolUses === 1 ? "use" : "uses"} left today
             </span>
           )}
+          <UserMenuButton />
         </div>
       </nav>
 

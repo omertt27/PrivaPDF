@@ -8,6 +8,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { activatePlan, getPlan, type PlanTier, PLAN_META } from "@/lib/usage-gate";
+import { useUser } from "@clerk/nextjs";
+import { UserMenuButton } from "@/components/UserMenuButton";
 
 type PageState = "activating" | "done" | "error";
 
@@ -40,8 +42,11 @@ function SuccessContent() {
   const params = useSearchParams();
   const [state, setState] = useState<PageState>("activating");
   const [plan, setPlan] = useState<PlanTier>("individual");
+  const { user, isLoaded: clerkLoaded } = useUser();
 
   useEffect(() => {
+    if (!clerkLoaded) return; // wait for Clerk to initialise before reading params
+
     // LemonSqueezy appends ?order_id= to the success_url
     const orderId  = params.get("order_id") ?? params.get("session_id") ?? "";
     const planParam = (params.get("plan") ?? "") as PlanTier;
@@ -52,7 +57,6 @@ function SuccessContent() {
 
     // Minimal guard: we need at least an order_id from LemonSqueezy
     if (!orderId) {
-      // Could be a direct visit — check if already activated
       const existing = getPlan();
       if (existing !== "free") {
         setPlan(existing);
@@ -63,14 +67,21 @@ function SuccessContent() {
       return;
     }
 
-    try {
-      activatePlan(resolvedPlan, orderId);
-      setPlan(resolvedPlan);
-      setState("done");
-    } catch {
-      setState("error");
+    // 1. Activate locally (always works, even offline)
+    activatePlan(resolvedPlan, orderId);
+    setPlan(resolvedPlan);
+
+    // 2. Persist to server so other devices can restore the plan
+    if (user) {
+      fetch("/api/plan/activate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: resolvedPlan, orderId }),
+      }).catch(() => { /* server write failed — localStorage is still set */ });
     }
-  }, [params]);
+
+    setState("done");
+  }, [params, clerkLoaded, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const meta = PLAN_META[plan];
   const perks = PLAN_PERKS[plan];
@@ -85,6 +96,7 @@ function SuccessContent() {
         <Link href="/" style={{ fontFamily: "var(--serif)", fontSize: 22, color: "var(--ink)", textDecoration: "none" }}>
           Priva<span style={{ color: "var(--accent)" }}>PDF</span>
         </Link>
+        <UserMenuButton />
       </nav>
 
       {/* Content */}
@@ -131,7 +143,7 @@ function SuccessContent() {
               }}>
                 Back to converter
               </Link>
-              <a href="mailto:support@privapdf.com" style={{
+              <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@privapdf.com"}`} style={{
                 display: "block", padding: "11px 0", borderRadius: 8,
                 background: "var(--cream)", color: "var(--ink)", border: "1px solid var(--border)",
                 fontWeight: 500, fontSize: 13, textAlign: "center", textDecoration: "none",
@@ -204,8 +216,28 @@ function SuccessContent() {
                 ? "It never expires — yours forever."
                 : "It renews automatically each billing period."}
               <br />
-              Questions? <a href="mailto:support@privapdf.com" style={{ color: "var(--accent)", textDecoration: "none" }}>support@privapdf.com</a>
+              Questions? <a href={`mailto:${process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@privapdf.com"}`} style={{ color: "var(--accent)", textDecoration: "none" }}>{process.env.NEXT_PUBLIC_SUPPORT_EMAIL ?? "support@privapdf.com"}</a>
             </p>
+
+            {/* Cross-device nudge — only shown when not signed in */}
+            {!user && (
+              <div style={{
+                marginTop: 20, padding: "14px 16px",
+                background: "var(--cream)", borderRadius: 10,
+                border: "1px solid var(--border)",
+                fontSize: 13, color: "var(--ink)", lineHeight: 1.55,
+                display: "flex", alignItems: "flex-start", gap: 10,
+              }}>
+                <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
+                <span>
+                  <strong>Want to use your plan on other devices?</strong>{" "}
+                  <Link href="/sign-up" style={{ color: "var(--accent)", textDecoration: "underline" }}>
+                    Create a free account
+                  </Link>{" "}
+                  — sign in anywhere and your plan restores automatically.
+                </span>
+              </div>
+            )}
           </div>
         )}
       </main>
