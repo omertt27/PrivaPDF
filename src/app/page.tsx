@@ -26,11 +26,12 @@ export const metadata: Metadata = {
    (/api/webhooks/lemonsqueezy) can read it server-side to validate orders.
    LemonSqueezy appends ?order_id=... to success_url after purchase.
 ───────────────────────────────────────────────────────────────────────────── */
-const ORIGIN = process.env.NEXT_PUBLIC_URL ?? "https://privapdf.com";
+const ORIGIN    = process.env.NEXT_PUBLIC_URL ?? "https://privapdf.net";
+const LS_SLUG   = process.env.NEXT_PUBLIC_LS_STORE_SLUG ?? "privapdf";
 const mkSuccess = (plan: string) => `${ORIGIN}/success?plan=${plan}`;
 const mkCancel  = () => `${ORIGIN}/#pricing`;
 const mkLSUrl   = (variantId: string, plan: string) =>
-  `https://privapdf.lemonsqueezy.com/checkout/buy/${variantId}` +
+  `https://${LS_SLUG}.lemonsqueezy.com/checkout/buy/${variantId}` +
   `?checkout[success_url]=${encodeURIComponent(mkSuccess(plan))}` +
   `&checkout[cancel_url]=${encodeURIComponent(mkCancel())}` +
   `&checkout[custom][plan]=${encodeURIComponent(plan)}`;

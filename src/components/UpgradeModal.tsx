@@ -55,10 +55,12 @@ const FEATURES = [
 // LemonSqueezy will append ?order_id=... to success_url after purchase.
 const SUCCESS_BASE = typeof window !== "undefined"
   ? `${window.location.origin}/success`
-  : "https://privapdf.com/success";
+  : `${process.env.NEXT_PUBLIC_URL ?? "https://privapdf.net"}/success`;
+
+const LS_SLUG = process.env.NEXT_PUBLIC_LS_STORE_SLUG ?? "privapdf";
 
 const mkLSUrl = (variantId: string, plan: string) =>
-  `https://privapdf.lemonsqueezy.com/checkout/buy/${variantId}` +
+  `https://${LS_SLUG}.lemonsqueezy.com/checkout/buy/${variantId}` +
   `?checkout[success_url]=${encodeURIComponent(SUCCESS_BASE + "?plan=" + plan)}` +
   `&checkout[cancel_url]=${encodeURIComponent(SUCCESS_BASE.replace("/success", "/#pricing"))}` +
   `&checkout[custom][plan]=${encodeURIComponent(plan)}`;
