@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = "https://privapdf.com";
+  const base = "https://privapdf.net";
   const now = new Date();
 
   return [

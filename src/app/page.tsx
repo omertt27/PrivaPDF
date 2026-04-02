@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: "PrivaPDF — PDF Converter That Never Uploads Your Files",
     description:
       "Convert PDF to Word, Excel, or PowerPoint without uploading anything. Runs entirely in your browser using local AI.",
-    url: "https://privapdf.com",
+    url: "https://privapdf.net",
   },
 };
 
@@ -119,7 +119,7 @@ const softwareAppSchema = {
     { "@type": "Offer", "price": "9", "priceCurrency": "USD", "name": "Pro", "billingIncrement": "P1M" },
   ],
   "description": "PDF converter that runs entirely in your browser. No uploads, no servers, works offline.",
-  "url": "https://privapdf.com",
+  "url": "https://privapdf.net",
   "featureList": [
     "PDF to Word conversion",
     "PDF to Excel conversion",

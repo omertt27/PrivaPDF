@@ -26,6 +26,20 @@ export const metadata: Metadata = {
   },
   description:
     "Convert PDF to Word, Excel, or PowerPoint without uploading anything. Runs entirely in your browser using local AI. Zero servers, zero accounts, works offline.",
+  keywords: [
+    "PDF converter",
+    "PDF to Word",
+    "PDF to Excel",
+    "PDF to PowerPoint",
+    "convert PDF without uploading",
+    "offline PDF converter",
+    "private PDF converter",
+    "PDF merge",
+    "PDF split",
+    "PDF compress",
+    "unlock PDF",
+    "browser-based PDF converter",
+  ],
   alternates: {
     canonical: "/",
   },
@@ -50,7 +64,7 @@ export const metadata: Metadata = {
     siteName: "PrivaPDF",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-logo.png",
         width: 1200,
         height: 630,
         alt: "PrivaPDF — Convert PDFs without uploading them",
@@ -62,7 +76,7 @@ export const metadata: Metadata = {
     title: "PrivaPDF — PDF Converter That Never Uploads Your Files",
     description:
       "Zero uploads. Runs in your browser. Works offline. Your files never leave your device.",
-    images: ["/og-image.png"],
+    images: ["/og-logo.png"],
   },
   robots: {
     index: true,

@@ -121,7 +121,7 @@ async function processPages(
           text: page.text || (
             canOCR
               ? "[Scanned page — enable AI OCR for full text extraction]"
-              : "[Scanned page — AI OCR requires a paid plan. Upgrade at privapdf.com/#pricing]"
+              : "[Scanned page — AI OCR requires a paid plan. Upgrade at privapdf.net/#pricing]"
           ),
         },
       ];

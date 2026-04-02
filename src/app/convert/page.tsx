@@ -134,7 +134,7 @@ export default function ConvertPage() {
             fontFamily: "var(--serif)", fontSize: "clamp(32px, 5vw, 52px)",
             lineHeight: 1.1, letterSpacing: -1.5, marginBottom: 16,
           }}>
-            Convert your PDF
+            Convert PDF to Word, Excel & PowerPoint
           </h1>
           <p style={{ fontSize: 16, color: "var(--muted)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7, fontWeight: 300 }}>
             Your file is processed entirely in this browser tab.{" "}

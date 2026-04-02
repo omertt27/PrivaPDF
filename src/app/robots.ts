@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/success", "/sign-in", "/sign-up", "/api/"],
       },
     ],
-    sitemap: "https://privapdf.com/sitemap.xml",
+    sitemap: "https://privapdf.net/sitemap.xml",
   };
 }
