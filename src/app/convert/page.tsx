@@ -18,6 +18,8 @@ import {
   RotateCcw,
   ShieldCheck,
   Layers,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,6 +27,7 @@ type Tab = "single" | "batch";
 
 export default function ConvertPage() {
   const [activeTab, setActiveTab] = useState<Tab>("single");
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const {
     status,
@@ -120,40 +123,30 @@ export default function ConvertPage() {
 
       <main className="convert-main">
         {/* ── Header ─────────────────────────────────────────────────────────── */}
-        <div style={{ marginBottom: 40, textAlign: "center" }}>
-          <div style={{
-            fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: "uppercase",
-            color: "var(--accent)", marginBottom: 16, display: "flex", alignItems: "center",
-            justifyContent: "center", gap: 8,
-          }}>
-            <span style={{ width: 20, height: 1, background: "var(--accent)", display: "inline-block" }} />
-            Privacy-first conversion
-            <span style={{ width: 20, height: 1, background: "var(--accent)", display: "inline-block" }} />
-          </div>
+        <div style={{ marginBottom: 32, textAlign: "center" }}>
           <h1 style={{
-            fontFamily: "var(--serif)", fontSize: "clamp(32px, 5vw, 52px)",
-            lineHeight: 1.1, letterSpacing: -1.5, marginBottom: 16,
+            fontFamily: "var(--serif)", fontSize: "clamp(28px, 4vw, 44px)",
+            lineHeight: 1.1, letterSpacing: -1, marginBottom: 10,
           }}>
-            Convert PDF to Word, Excel & PowerPoint
+            Convert PDF — nothing uploaded
           </h1>
-          <p style={{ fontSize: 16, color: "var(--muted)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7, fontWeight: 300 }}>
-            Your file is processed entirely in this browser tab.{" "}
-            <strong style={{ color: "var(--ink)", fontWeight: 500 }}>Nothing is ever uploaded.</strong>
+          <p style={{ fontSize: 15, color: "var(--muted)", maxWidth: 420, margin: "0 auto", lineHeight: 1.6, fontWeight: 300 }}>
+            Drop a PDF. Your file converts{" "}
+            <strong style={{ color: "var(--ink)", fontWeight: 500 }}>entirely in this tab</strong> and downloads automatically.
           </p>
         </div>
 
         {/* ── Privacy strip ─────────────────────────────────────────────────── */}
         <div style={{
-          display: "flex", justifyContent: "center", gap: 32, marginBottom: 40,
-          padding: "14px 24px", background: "var(--cream)", borderRadius: 12,
-          border: "1px solid var(--border)", flexWrap: "wrap",
+          display: "flex", justifyContent: "center", gap: 24, marginBottom: 32,
+          flexWrap: "wrap",
         }}>
           {[
-            { icon: <ShieldCheck size={13} />, label: "Files stay local" },
-            { icon: <ShieldCheck size={13} />, label: "No account needed" },
+            { icon: <ShieldCheck size={13} />, label: "No upload" },
+            { icon: <ShieldCheck size={13} />, label: "No account" },
             { icon: <ShieldCheck size={13} />, label: "Works offline" },
           ].map((item) => (
-            <span key={item.label} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, color: "var(--accent)", fontWeight: 500 }}>
+            <span key={item.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, color: "var(--accent)", fontWeight: 500 }}>
               {item.icon}{item.label}
             </span>
           ))}
@@ -207,88 +200,110 @@ export default function ConvertPage() {
             <>
               {/* IDLE */}
               {status === "idle" && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                  {/* ── Format pill row — visible at a glance ── */}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {(["docx", "xlsx", "pptx", "txt"] as const).map((fmt) => {
+                      const labels: Record<string, string> = { docx: "Word", xlsx: "Excel", pptx: "PowerPoint", txt: "Text" };
+                      const locked = (fmt === "xlsx" && !canUseXlsx) || (fmt === "pptx" && !canUsePptx);
+                      const active = outputFormat === fmt;
+                      return (
+                        <button
+                          key={fmt}
+                          onClick={() => !locked && setOutputFormat(fmt)}
+                          title={locked ? "Upgrade to use this format" : undefined}
+                          style={{
+                            padding: "6px 16px", borderRadius: 20, fontSize: 13, fontWeight: active ? 600 : 400,
+                            border: active ? "2px solid var(--accent)" : "1.5px solid var(--border)",
+                            background: active ? "var(--accent-light)" : "var(--paper)",
+                            color: locked ? "var(--border)" : active ? "var(--accent)" : "var(--muted)",
+                            cursor: locked ? "not-allowed" : "pointer", fontFamily: "var(--sans)",
+                            display: "flex", alignItems: "center", gap: 6, transition: "all 0.12s",
+                          }}
+                        >
+                          {labels[fmt]}
+                          {locked && <span style={{ fontSize: 9, background: "var(--accent)", color: "#fff", padding: "1px 5px", borderRadius: 10, fontWeight: 700 }}>PRO</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+
                   <DropZone onFile={convertFile} disabled={false} />
 
-                  {/* Options row */}
-                  <div className="convert-options-grid">
-                    {/* Format selector */}
-                    <FormatSelector
-                      value={outputFormat}
-                      onChange={setOutputFormat}
-                      isPro={isPro}
-                      canUseXlsx={canUseXlsx}
-                      canUsePptx={canUsePptx}
-                    />
+                  {/* ── Advanced options toggle ── */}
+                  <button
+                    onClick={() => setShowAdvanced((v) => !v)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 6,
+                      background: "none", border: "none", padding: 0,
+                      fontSize: 13, color: "var(--muted)", cursor: "pointer",
+                      fontFamily: "var(--sans)", fontWeight: 500, width: "fit-content",
+                    }}
+                  >
+                    {showAdvanced ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                    {showAdvanced ? "Hide advanced options" : "Advanced options"}
+                  </button>
 
-                    {/* Page range — only shown for paid plans after a file is selected */}
-                    {!canUsePageRange ? (
-                      <div>
-                        <p style={{ fontSize: 12, fontWeight: 500, color: "var(--muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-                          Page Range
-                        </p>
-                        <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
-                          Page range selection is available on paid plans.{" "}
-                          <a href="/#pricing" style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 500 }}>Upgrade →</a>
-                        </p>
-                      </div>
-                    ) : totalPages > 0 ? (
-                      <PageRangePicker
-                        totalPages={totalPages}
-                        value={pageRange}
-                        onChange={setPageRange}
+                  {showAdvanced && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 20, padding: "20px 24px", background: "var(--cream)", borderRadius: 12, border: "1px solid var(--border)" }}>
+                      {/* Full format selector */}
+                      <FormatSelector
+                        value={outputFormat}
+                        onChange={setOutputFormat}
+                        isPro={isPro}
+                        canUseXlsx={canUseXlsx}
+                        canUsePptx={canUsePptx}
                       />
-                    ) : (
-                      <div>
-                        <p style={{ fontSize: 12, fontWeight: 500, color: "var(--muted)", marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>
-                          Page Range
-                        </p>
-                        <p style={{ fontSize: 13, color: "var(--muted)" }}>
-                          Drop a PDF to unlock page range selection
-                        </p>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* AI OCR section */}
-                  <div style={{ borderTop: "1px solid var(--border)", paddingTop: 20 }}>
-                    <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 14, fontWeight: 500 }}>
-                      🔍 Have a <strong style={{ color: "var(--ink)" }}>scanned PDF</strong>? Enable AI OCR:
-                    </p>
-                    {!canUseOCR ? (
-                      <div style={{
-                        padding: "12px 16px", background: "var(--cream)", borderRadius: 10,
-                        border: "1px solid var(--border)", fontSize: 13, color: "var(--muted)", lineHeight: 1.6,
-                      }}>
-                        <strong style={{ color: "var(--ink)" }}>AI OCR for scanned PDFs</strong> is available on paid plans.{" "}
-                        <a href="/#pricing" style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 500 }}>Upgrade to unlock →</a>
+                      {/* Page range */}
+                      {!canUsePageRange ? (
+                        <div>
+                          <p style={{ fontSize: 12, fontWeight: 500, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Page Range</p>
+                          <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+                            Page range selection is available on paid plans.{" "}
+                            <a href="/#pricing" style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 500 }}>Upgrade →</a>
+                          </p>
+                        </div>
+                      ) : totalPages > 0 ? (
+                        <PageRangePicker totalPages={totalPages} value={pageRange} onChange={setPageRange} />
+                      ) : (
+                        <div>
+                          <p style={{ fontSize: 12, fontWeight: 500, color: "var(--muted)", marginBottom: 8, textTransform: "uppercase", letterSpacing: 1 }}>Page Range</p>
+                          <p style={{ fontSize: 13, color: "var(--muted)" }}>Drop a PDF above to select page ranges</p>
+                        </div>
+                      )}
+
+                      {/* AI OCR */}
+                      <div style={{ borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+                        <p style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12, fontWeight: 500 }}>
+                          🔍 Scanned PDF? Enable AI OCR:
+                        </p>
+                        {!canUseOCR ? (
+                          <p style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.6 }}>
+                            AI OCR is available on paid plans.{" "}
+                            <a href="/#pricing" style={{ color: "var(--accent)", textDecoration: "none", fontWeight: 500 }}>Upgrade →</a>
+                          </p>
+                        ) : !workerReady && !workerLoading ? (
+                          <button
+                            onClick={loadAIModels}
+                            style={{
+                              background: "var(--ink)", color: "var(--paper)",
+                              border: "none", padding: "9px 18px", borderRadius: 8,
+                              fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--sans)",
+                            }}
+                          >
+                            Load AI OCR (~500 MB, one-time)
+                          </button>
+                        ) : workerLoading ? (
+                          <WarmupScreen stage={workerProgress.stage} percent={workerProgress.percent} gpuDevice={gpuDevice} onSkip={() => {}} />
+                        ) : (
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--accent)", fontWeight: 500 }}>
+                            <CheckCircle size={15} /> AI OCR ready — scanned PDFs supported
+                          </div>
+                        )}
                       </div>
-                    ) : !workerReady && !workerLoading ? (
-                      <button
-                        onClick={loadAIModels}
-                        style={{
-                          background: "var(--ink)", color: "var(--paper)",
-                          border: "none", padding: "10px 20px", borderRadius: 8,
-                          fontSize: 14, fontWeight: 500, cursor: "pointer",
-                          fontFamily: "var(--sans)",
-                        }}
-                      >
-                        Load AI OCR Engine (~500 MB, one-time download)
-                      </button>
-                    ) : workerLoading ? (
-                      <WarmupScreen
-                        stage={workerProgress.stage}
-                        percent={workerProgress.percent}
-                        gpuDevice={gpuDevice}
-                        onSkip={() => {}}
-                      />
-                    ) : (
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, color: "var(--accent)", fontWeight: 500 }}>
-                        <CheckCircle size={16} />
-                        AI OCR engine ready — scanned PDFs fully supported
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -454,12 +469,12 @@ export default function ConvertPage() {
 
         {/* ── Tips footer ───────────────────────────────────────────────────── */}
         <div style={{
-          marginTop: 32, display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center",
+          marginTop: 28, display: "flex", gap: 16, flexWrap: "wrap", justifyContent: "center",
         }}>
           {[
-            "Text PDFs convert instantly — no AI needed",
-            "Scanned PDFs need AI OCR (one-time 500 MB download)",
-            "All processing happens in this browser tab",
+            "Text PDFs: instant · no AI needed",
+            "Scanned PDFs: AI OCR in Advanced options",
+            "Large files (>50 MB): close other tabs for speed",
           ].map((tip) => (
             <span key={tip} style={{
               fontSize: 12, color: "var(--muted)",

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import Link from "next/link";
-import { Merge, Scissors, Minimize2, Unlock, RotateCcw, CheckCircle, AlertCircle, ArrowUp, ArrowDown, EyeOff, FileText } from "lucide-react";
+import { Merge, Scissors, Minimize2, Unlock, Lock, PenLine, RotateCcw, CheckCircle, AlertCircle, ArrowUp, ArrowDown, EyeOff, FileText } from "lucide-react";
 import { usePdfTools } from "@/hooks/usePdfTools";
 import { ProgressBar } from "@/components/ProgressBar";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -10,13 +10,15 @@ import { UserMenuButton } from "@/components/UserMenuButton";
 import { isPaidPlan, hasFeature, getPlan } from "@/lib/usage-gate";
 import type { RedactionRect } from "@/lib/pdf-tools";
 
-type ToolTab = "merge" | "split" | "compress" | "unlock" | "redact" | "privilege_log";
+type ToolTab = "merge" | "split" | "compress" | "unlock" | "lock" | "sign" | "redact" | "privilege_log";
 
 const ALL_TABS: { id: ToolTab; label: string; icon: React.ReactNode; badge?: string }[] = [
   { id: "merge",         label: "Merge",       icon: <Merge size={15} /> },
   { id: "split",         label: "Split",        icon: <Scissors size={15} /> },
   { id: "compress",      label: "Compress",     icon: <Minimize2 size={15} /> },
   { id: "unlock",        label: "Unlock",       icon: <Unlock size={15} /> },
+  { id: "lock",          label: "Lock",         icon: <Lock size={15} /> },
+  { id: "sign",          label: "Sign",         icon: <PenLine size={15} /> },
   { id: "redact",        label: "Redact",       icon: <EyeOff size={15} />,   badge: "Legal" },
   { id: "privilege_log", label: "Privilege Log",icon: <FileText size={15} />, badge: "Legal" },
 ];
@@ -78,15 +80,15 @@ export default function ToolsPage() {
           <h1 style={{ fontFamily: "var(--serif)", fontSize: "clamp(30px, 4vw, 48px)", lineHeight: 1.1, letterSpacing: -1.5, marginBottom: 14 }}>
             PDF Tools
           </h1>
-          <p style={{ fontSize: 15, color: "var(--muted)", maxWidth: 460, margin: "0 auto", lineHeight: 1.7, fontWeight: 300 }}>
-            Merge, split, compress, and unlock PDFs — everything runs in your browser.
-            Your files are <strong style={{ color: "var(--ink)", fontWeight: 500 }}>never uploaded.</strong>
+          <p style={{ fontSize: 15, color: "var(--muted)", maxWidth: 400, margin: "0 auto", lineHeight: 1.6, fontWeight: 300 }}>
+            Merge, split, compress, unlock, lock and sign — all in your browser.{" "}
+            <strong style={{ color: "var(--ink)", fontWeight: 500 }}>Never uploaded.</strong>
           </p>
         </div>
 
         {/* Tool tabs */}
         <div style={{
-          display: "grid", gridTemplateColumns: "repeat(6, 1fr)",
+          display: "grid", gridTemplateColumns: "repeat(8, 1fr)",
           border: "1px solid var(--border)", borderRadius: 14,
           overflow: "hidden", marginBottom: 32, background: "var(--cream)",
         }}>
@@ -142,6 +144,14 @@ export default function ToolsPage() {
           {/* ── UNLOCK ── */}
           {activeTab === "unlock" && (
             <UnlockPanel tools={tools} isProcessing={isProcessing} />
+          )}
+          {/* ── LOCK ── */}
+          {activeTab === "lock" && (
+            <LockPanel tools={tools} isProcessing={isProcessing} />
+          )}
+          {/* ── SIGN ── */}
+          {activeTab === "sign" && (
+            <SignPanel tools={tools} isProcessing={isProcessing} />
           )}
           {/* ── REDACT (Legal) ── */}
           {activeTab === "redact" && (
@@ -472,6 +482,261 @@ function UnlockPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfT
         isProcessing={isProcessing}
         label="Unlock & download PDF →"
         disabledReason={!tools.unlockFile ? "Select a PDF first" : !tools.unlockPassword.trim() ? "Enter the password" : undefined}
+      />
+    </div>
+  );
+}
+
+// ── Lock Panel ────────────────────────────────────────────────────────────────
+
+function LockPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<Lock size={18} />}
+        title="Lock PDF"
+        desc="Password-protect a PDF · Encryption happens locally · Never uploaded"
+      />
+
+      <div style={{
+        padding: "12px 16px", background: "var(--accent-light)",
+        border: "1px solid var(--accent)", borderRadius: 10,
+        fontSize: 13, color: "var(--accent)",
+        display: "flex", alignItems: "flex-start", gap: 8,
+      }}>
+        <span style={{ flexShrink: 0, marginTop: 1 }}>🔐</span>
+        <span>
+          The password is applied inside your browser using RC4 encryption.
+          Your file and password are <strong>never sent to any server.</strong>
+        </span>
+      </div>
+
+      <PdfDropZone onFiles={(files) => tools.setLockFile(files[0] || null)} label="Drop a PDF to password-protect" />
+
+      {tools.lockFile && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px", background: "var(--cream)",
+          border: "1px solid var(--border)", borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 13, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tools.lockFile.name}
+          </span>
+          <IconBtn onClick={() => tools.setLockFile(null)} title="Remove">✕</IconBtn>
+        </div>
+      )}
+
+      <div>
+        <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)", display: "block", marginBottom: 8 }}>
+          Set Password
+        </label>
+        <input
+          type="password"
+          value={tools.lockPassword}
+          onChange={(e) => tools.setLockPassword(e.target.value)}
+          placeholder="Choose a strong password"
+          onKeyDown={(e) => { if (e.key === "Enter" && !isProcessing && tools.lockFile) tools.runLock(); }}
+          style={{
+            width: "100%", padding: "10px 14px",
+            border: "1.5px solid var(--border)", borderRadius: 8,
+            fontSize: 14, fontFamily: "var(--sans)", color: "var(--ink)",
+            background: "var(--paper)", outline: "none", boxSizing: "border-box",
+          }}
+        />
+      </div>
+
+      <RunButton
+        disabled={isProcessing || !tools.lockFile || !tools.lockPassword.trim()}
+        onClick={tools.runLock}
+        isProcessing={isProcessing}
+        label="Lock & download PDF →"
+        disabledReason={!tools.lockFile ? "Select a PDF first" : !tools.lockPassword.trim() ? "Enter a password" : undefined}
+      />
+    </div>
+  );
+}
+
+// ── Sign Panel ────────────────────────────────────────────────────────────────
+
+function SignPanel({ tools, isProcessing }: { tools: ReturnType<typeof usePdfTools>; isProcessing: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [hasSignature, setHasSignature] = useState(false);
+  const lastPos = useRef<{ x: number; y: number } | null>(null);
+
+  const getPos = (e: React.MouseEvent | React.TouchEvent, canvas: HTMLCanvasElement) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    if ("touches" in e) {
+      return {
+        x: (e.touches[0].clientX - rect.left) * scaleX,
+        y: (e.touches[0].clientY - rect.top)  * scaleY,
+      };
+    }
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top)  * scaleY,
+    };
+  };
+
+  const startDraw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    ctx.strokeStyle = "#0d1f16";
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    setIsDrawing(true);
+    lastPos.current = getPos(e, canvas);
+  };
+
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (!isDrawing || !lastPos.current) return;
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    const pos = getPos(e, canvas);
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    lastPos.current = pos;
+    setHasSignature(true);
+  };
+
+  const endDraw = () => {
+    setIsDrawing(false);
+    lastPos.current = null;
+    // Export canvas to dataURL and save to tools state
+    const canvas = canvasRef.current;
+    if (canvas && hasSignature) {
+      tools.setSignatureDataUrl(canvas.toDataURL("image/png"));
+    }
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current!;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    setHasSignature(false);
+    tools.setSignatureDataUrl("");
+  };
+
+  const handleSigImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      tools.setSignatureDataUrl(dataUrl);
+      setHasSignature(true);
+      // Draw it on the canvas for preview
+      const canvas = canvasRef.current!;
+      const ctx = canvas.getContext("2d")!;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const img = new Image();
+      img.onload = () => ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      img.src = dataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <SectionHeader
+        icon={<PenLine size={18} />}
+        title="Sign PDF"
+        desc="Draw or upload a signature · Baked into the PDF locally · Never uploaded"
+      />
+
+      <PdfDropZone onFiles={(files) => tools.setSignFile(files[0] || null)} label="Drop the PDF to sign" />
+
+      {tools.signFile && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          padding: "12px 16px", background: "var(--cream)",
+          border: "1px solid var(--border)", borderRadius: 10,
+        }}>
+          <span style={{ fontSize: 13, color: "var(--ink)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {tools.signFile.name}
+          </span>
+          {tools.signTotalPages > 1 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+              <span style={{ fontSize: 12, color: "var(--muted)" }}>Page</span>
+              <select
+                value={tools.signPage}
+                onChange={(e) => tools.setSignPage(Number(e.target.value))}
+                style={{
+                  fontSize: 13, padding: "4px 8px", borderRadius: 6,
+                  border: "1px solid var(--border)", background: "var(--paper)", color: "var(--ink)",
+                  fontFamily: "var(--sans)",
+                }}
+              >
+                {Array.from({ length: tools.signTotalPages }, (_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          <IconBtn onClick={() => tools.setSignFile(null)} title="Remove">✕</IconBtn>
+        </div>
+      )}
+
+      {/* Signature pad */}
+      <div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <label style={{ fontSize: 13, fontWeight: 500, color: "var(--ink)" }}>
+            Draw your signature
+          </label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <label style={{
+              fontSize: 12, color: "var(--accent)", fontWeight: 500, cursor: "pointer",
+              padding: "4px 10px", border: "1px solid var(--accent)", borderRadius: 6,
+            }}>
+              Upload image
+              <input type="file" accept="image/*" style={{ display: "none" }} onChange={handleSigImage} />
+            </label>
+            <button
+              onClick={clearCanvas}
+              style={{
+                fontSize: 12, color: "var(--muted)", cursor: "pointer",
+                padding: "4px 10px", border: "1px solid var(--border)", borderRadius: 6,
+                background: "transparent", fontFamily: "var(--sans)",
+              }}
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+        <canvas
+          ref={canvasRef}
+          width={560}
+          height={140}
+          onMouseDown={startDraw}
+          onMouseMove={draw}
+          onMouseUp={endDraw}
+          onMouseLeave={endDraw}
+          onTouchStart={startDraw}
+          onTouchMove={draw}
+          onTouchEnd={endDraw}
+          style={{
+            width: "100%", height: 140, border: "1.5px dashed var(--border)", borderRadius: 10,
+            background: "#fafaf8", cursor: "crosshair", touchAction: "none", display: "block",
+          }}
+        />
+        <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
+          Signature will be placed at the bottom-left of page {tools.signPage}.
+        </p>
+      </div>
+
+      <RunButton
+        disabled={isProcessing || !tools.signFile || !hasSignature}
+        onClick={tools.runSign}
+        isProcessing={isProcessing}
+        label="Sign & download PDF →"
+        disabledReason={!tools.signFile ? "Select a PDF first" : !hasSignature ? "Draw or upload a signature" : undefined}
       />
     </div>
   );

@@ -5,12 +5,12 @@ import { UserMenuButton } from "@/components/UserMenuButton";
 export const metadata: Metadata = {
   title: "PDF to Word Converter — No Upload Required",
   description:
-    "Convert PDF to Word, Excel, and PowerPoint entirely in your browser. No uploads, no servers, no account. Works offline. Free to start.",
+    "Convert PDF to Word, Excel, and PowerPoint entirely in your browser. Merge, split, compress, unlock, lock, and sign PDFs — all locally. No uploads, no servers, no account. Works offline. Free to start.",
   alternates: { canonical: "/" },
   openGraph: {
     title: "PrivaPDF — PDF Converter That Never Uploads Your Files",
     description:
-      "Convert PDF to Word, Excel, or PowerPoint without uploading anything. Runs entirely in your browser using local AI.",
+      "Convert PDF to Word, Excel, or PowerPoint without uploading anything. Lock, sign, merge, split — all in your browser using local AI.",
     url: "https://privapdf.net",
   },
 };
@@ -48,18 +48,20 @@ const LS = {
 const INVERTED_ROWS = new Set(["Company can access your files?"]);
 
 const compareRows = [
-  { feature: "Files stay on your device",       us: "✓ Always",         small: "✗ Uploaded",  ilove: "✗ Uploaded",  adobe: "✗ Uploaded" },
-  { feature: "Company can access your files?",  us: "✗ Never — impossible", small: "✓ Yes, by policy", ilove: "✓ Yes, by policy", adobe: "✓ Yes, by policy" },
-  { feature: "Works offline",                   us: "✓ Yes",            small: "✗ No",        ilove: "✗ No",        adobe: "✗ No" },
-  { feature: "No account required",             us: "✓ Never",          small: "✗ Required",  ilove: "✗ Required",  adobe: "✗ Required" },
-  { feature: "PDF → Word (.docx)",              us: "✓ Yes",            small: "✓ Yes",       ilove: "✓ Yes",       adobe: "✓ Yes" },
-  { feature: "PDF → Excel (.xlsx)",             us: "✓ Pro",            small: "✓ Pro",       ilove: "✓ Pro",       adobe: "✓ Paid" },
-  { feature: "PDF → PowerPoint (.pptx)",        us: "✓ Pro",            small: "✓ Pro",       ilove: "✓ Pro",       adobe: "✓ Paid" },
-  { feature: "Merge / Split / Compress",        us: "✓ Yes",            small: "✓ Yes",       ilove: "✓ Yes",       adobe: "✓ Paid" },
-  { feature: "Unlock password PDFs",            us: "✓ Local only",     small: "✗ Uploads",   ilove: "✗ Uploads",   adobe: "✗ Uploads" },
-  { feature: "Table reconstruction",            us: "✓ AI-grade",       small: "~ Basic",     ilove: "~ Basic",     adobe: "~ Basic" },
-  { feature: "Batch conversion",                us: "✓ Pro",            small: "✓ Pro",       ilove: "✓ Pro",       adobe: "✓ Paid" },
-  { feature: "One-time purchase option",        us: "✓ $19 individual", small: "✗ Sub only",  ilove: "✗ Sub only",  adobe: "✗ Sub only" },
+  { feature: "Files stay on your device",           us: "✓ Always",            small: "✗ Uploaded",       ilove: "✗ Uploaded",       adobe: "✗ Uploaded",      docusign: "✗ Uploaded" },
+  { feature: "Company can access your files?",      us: "✗ Never — impossible", small: "✓ Yes, by policy", ilove: "✓ Yes, by policy", adobe: "✓ Yes, by policy", docusign: "✓ Yes, by policy" },
+  { feature: "Works offline",                       us: "✓ Yes",               small: "✗ No",             ilove: "✗ No",             adobe: "✗ No",             docusign: "✗ No" },
+  { feature: "No account required",                 us: "✓ Never",             small: "✗ Required",       ilove: "✗ Required",       adobe: "✗ Required",      docusign: "✗ Required" },
+  { feature: "PDF → Word (.docx)",                  us: "✓ Yes",               small: "✓ Yes",            ilove: "✓ Yes",            adobe: "✓ Yes",            docusign: "✗ No" },
+  { feature: "PDF → Excel (.xlsx)",                 us: "✓ Pro",               small: "✓ Pro",            ilove: "✓ Pro",            adobe: "✓ Paid",           docusign: "✗ No" },
+  { feature: "PDF → PowerPoint (.pptx)",            us: "✓ Pro",               small: "✓ Pro",            ilove: "✓ Pro",            adobe: "✓ Paid",           docusign: "✗ No" },
+  { feature: "Merge / Split / Compress",            us: "✓ Yes",               small: "✓ Yes",            ilove: "✓ Yes",            adobe: "✓ Paid",           docusign: "✗ No" },
+  { feature: "Unlock password PDFs",                us: "✓ Local only",        small: "✗ Uploads",        ilove: "✗ Uploads",        adobe: "✗ Uploads",        docusign: "✗ No" },
+  { feature: "Password-protect PDF locally",        us: "✓ Individual+",       small: "✗ Uploads",        ilove: "✗ Uploads",        adobe: "✗ Uploads",        docusign: "✗ No" },
+  { feature: "Sign PDF locally (no cloud)",         us: "✓ Individual+",       small: "✗ Uploads",        ilove: "✗ Uploads",        adobe: "✗ Uploads",        docusign: "✗ Cloud only" },
+  { feature: "Table reconstruction",                us: "✓ AI-grade",          small: "~ Basic",          ilove: "~ Basic",          adobe: "~ Basic",          docusign: "✗ No" },
+  { feature: "Batch conversion",                    us: "✓ Pro",               small: "✓ Pro",            ilove: "✓ Pro",            adobe: "✓ Paid",           docusign: "✗ No" },
+  { feature: "One-time purchase option",            us: "✓ $19 individual",    small: "✗ Sub only",       ilove: "✗ Sub only",       adobe: "✗ Sub only",       docusign: "✗ Sub only" },
 ];
 
 const faqs = [
@@ -103,6 +105,14 @@ const faqs = [
     q: "Can I unlock a password-protected PDF without uploading it?",
     a: "Yes. Enter the password in the browser — it decrypts the PDF locally using PDF.js. Your password and your file never leave this tab.",
   },
+  {
+    q: "How does Sign PDF work locally?",
+    a: "Draw your signature on a canvas element directly in the browser. PrivaPDF renders each PDF page, overlays your signature at the position you choose, and writes the result as a new PDF — all inside your browser tab. No signature image, no file, and no private key ever travels over the network.",
+  },
+  {
+    q: "Can I password-protect a PDF without uploading it?",
+    a: "Yes — that's the Lock PDF tool. You type a password in the browser; pdf-lib applies AES-256 encryption entirely in your tab and produces a protected PDF for download. Your chosen password and your document are never transmitted anywhere.",
+  },
 ];
 
 /* ─── Page ──────────────────────────────────────────────────────────────────── */
@@ -125,6 +135,8 @@ const softwareAppSchema = {
     "PDF to Excel conversion",
     "PDF to PowerPoint conversion",
     "PDF merge, split, compress, unlock",
+    "Password-protect PDF locally",
+    "Sign PDF locally — no cloud",
     "Works offline — no internet required",
     "AI OCR for scanned PDFs",
   ],
@@ -210,7 +222,7 @@ export default function Home() {
             animationDelay: "0.3s",
           }}>
             Runs entirely in your browser using local AI.
-            Word, Excel, PowerPoint — plus merge, split, compress and unlock.{" "}
+            Word, Excel, PowerPoint — plus merge, split, compress, unlock, lock and sign.{" "}
             <strong style={{ color: "var(--ink)", fontWeight: 500 }}>Nothing ever leaves this tab.</strong>
           </p>
 
@@ -232,7 +244,7 @@ export default function Home() {
           </div>
 
           <div className="animate-fade-up hero-stats" style={{ animationDelay: "0.5s" }}>
-            {[["0 bytes", "sent to any server"], ["~2 sec", "avg. conversion time"], ["4", "output formats"], ["4", "free PDF tools"]].map(([num, label]) => (
+            {[["0 bytes", "sent to any server"], ["~2 sec", "avg. conversion time"], ["4", "output formats"], ["6", "free PDF tools"]].map(([num, label]) => (
               <div key={label} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontFamily: "var(--serif)", fontSize: 22, letterSpacing: "-0.5px" }}>{num}</span>
                 <span style={{ fontSize: 12, color: "var(--muted)" }}>{label}</span>
@@ -337,7 +349,7 @@ export default function Home() {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 48, flexWrap: "wrap", gap: 24 }}>
           <h2 style={{ fontFamily: "var(--serif)", fontSize: "clamp(32px,4vw,48px)", lineHeight: 1.1, letterSpacing: -1, maxWidth: 520 }}>
-            Merge. Split. Compress. Unlock.<br />
+            Merge. Split. Compress. Unlock. Lock. Sign.<br />
             <em style={{ fontStyle: "italic", color: "var(--accent)" }}>None of it leaves your browser.</em>
           </h2>
           <Link href="/tools" style={{
@@ -378,18 +390,34 @@ export default function Home() {
               badge: "Free",
               badgeColor: "var(--accent)",
             },
+            {
+              icon: "🔒",
+              title: "Lock PDF",
+              desc: "Set a password to encrypt your PDF with AES-256 — entirely in your browser. The password and your file never leave this tab.",
+              badge: "Individual+",
+              badgeColor: "#b05a2a",
+            },
+            {
+              icon: "✍️",
+              title: "Sign PDF",
+              desc: "Draw your signature on a canvas and place it anywhere on the document. Signed locally — no cloud, no DocuSign account needed.",
+              badge: "Individual+",
+              badgeColor: "#b05a2a",
+            },
           ].map((tool, i) => (
             <div key={i} style={{
               padding: "36px 40px",
               borderRight: i % 2 === 0 ? "1px solid var(--border)" : "none",
-              borderBottom: i < 2 ? "1px solid var(--border)" : "none",
+              borderBottom: i < 4 ? "1px solid var(--border)" : "none",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <span style={{ fontSize: 28, lineHeight: 1 }}>{tool.icon}</span>
                 <h3 style={{ fontSize: 17, fontWeight: 600, color: "var(--ink)" }}>{tool.title}</h3>
                 <span style={{
                   marginLeft: "auto", fontSize: 11, fontWeight: 500,
-                  color: tool.badgeColor, background: "var(--accent-light)",
+                  color: tool.badgeColor,
+                  background: tool.badgeColor === "var(--accent)" ? "var(--accent-light)" : "#fff7f0",
+                  border: tool.badgeColor === "var(--accent)" ? "none" : "1px solid #ffd4b0",
                   padding: "3px 10px", borderRadius: 20,
                 }}>{tool.badge}</span>
               </div>
@@ -543,7 +571,7 @@ export default function Home() {
           <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid var(--border)", borderRadius: 12, overflow: "hidden", background: "var(--paper)" }}>
             <thead>
               <tr>
-                {["Feature", "PrivaPDF", "Smallpdf", "ILovePDF", "Adobe"].map((h, i) => (
+                {["Feature", "PrivaPDF", "Smallpdf", "ILovePDF", "Adobe", "DocuSign"].map((h, i) => (
                   <th key={h} style={{
                     padding: "20px 28px", textAlign: "left", fontSize: 13, fontWeight: 500,
                     borderBottom: "1px solid var(--border)",
@@ -559,27 +587,18 @@ export default function Home() {
                 return (
                 <tr key={ri}>
                   <td style={{ padding: "18px 28px", fontSize: 14, borderBottom: ri < compareRows.length - 1 ? "1px solid var(--border)" : "none", color: "var(--ink)" }}>{row.feature}</td>
-                  {[row.us, row.small, row.ilove, row.adobe].map((val, ci) => {
+                  {[row.us, row.small, row.ilove, row.adobe, row.docusign].map((val, ci) => {
                     const isPrivaPDF = ci === 0;
                     const isCheckmark = val.startsWith("✓");
                     const isCross = val.startsWith("✗");
-                    // Normal rows: ✓ privapdf=green, ✗ privapdf=red, ✓ competitor=green, ✗ competitor=red
-                    //   → wait, we actually want: ✓ privapdf=good, ✗ competitors=good (they lack it)
-                    // Actually standard: ✓ = green for all, ✗ = red for all EXCEPT inverted rows
-                    // Inverted rows: ✗ privapdf = green (good!), ✓ competitors = red (bad!)
                     let color = "var(--muted)";
                     if (isCheckmark || isCross) {
                       if (isInverted) {
-                        // ✗ = green (good outcome), ✓ = red (bad outcome)
                         color = isCross ? "#1a472a" : "#b0392a";
                       } else {
-                        // ✓ = green, ✗ = red — but for competitors ✗ can also mean "bad for them"
-                        // We highlight PrivaPDF advantages: ✓ privapdf=green, ✗ privapdf=red
-                        // competitors: ✗ = neutral/red (they're missing it), ✓ = neutral
                         if (isPrivaPDF) {
                           color = isCheckmark ? "#1a472a" : "#b0392a";
                         } else {
-                          // competitor column: ✗ = muted-red (they lack it), ✓ = neutral green
                           color = isCross ? "#b0392a" : "#1a472a";
                         }
                       }
@@ -751,6 +770,8 @@ export default function Home() {
                 "Excel + PowerPoint export",
                 "Batch convert",
                 "Page range selection",
+                "Lock PDF (password-protect locally)",
+                "Sign PDF locally — no DocuSign needed",
               ].map((f) => (
                 <li key={f} style={{ fontSize: 13, color: "var(--ink)", display: "flex", alignItems: "flex-start", gap: 8 }}>
                   <span style={{ color: "var(--accent)", flexShrink: 0, marginTop: 1, fontSize: 14, lineHeight: 1 }}>✓</span>
@@ -899,7 +920,7 @@ export default function Home() {
             <div>
               <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.5, textTransform: "uppercase", color: "var(--muted)", marginBottom: 12 }}>Use cases</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[["/#tools", "Merge PDF"], ["/#tools", "Split PDF"], ["/#tools", "Compress PDF"], ["/#tools", "Unlock PDF"]].map(([href, label]) => (
+                {[["/#tools", "Merge PDF"], ["/#tools", "Split PDF"], ["/#tools", "Compress PDF"], ["/#tools", "Unlock PDF"], ["/#tools", "Lock PDF"], ["/#tools", "Sign PDF"]].map(([href, label]) => (
                   <a key={label} href={href} style={{ fontSize: 13, color: "var(--muted)", textDecoration: "none" }}>{label}</a>
                 ))}
               </div>

@@ -4,12 +4,14 @@
 import { useState, useCallback } from "react";
 import {
   mergePDFs, splitPDF, compressPDF, unlockPDF,
+  lockPDF, signPDF,
   redactPDF, extractPrivilegeLog, renderPDFPages,
   type RedactionRect, type RenderedPage, type PrivilegeLogEntry,
+  type SignatureOptions, type LockOptions,
 } from "@/lib/pdf-tools";
 import { consumeToolUse, getRemainingToolUses, isPaidPlan, hasFeature } from "@/lib/usage-gate";
 
-export type ToolMode = "merge" | "split" | "compress" | "unlock" | "redact" | "privilege_log";
+export type ToolMode = "merge" | "split" | "compress" | "unlock" | "lock" | "sign" | "redact" | "privilege_log";
 export type ToolStatus = "idle" | "processing" | "done" | "error" | "limit_reached";
 
 export interface UsePdfToolsReturn {
@@ -42,6 +44,21 @@ export interface UsePdfToolsReturn {
   unlockPassword: string;
   setUnlockPassword: (p: string) => void;
   runUnlock: () => Promise<void>;
+  // Lock (password-protect)
+  lockFile: File | null;
+  setLockFile: (f: File | null) => void;
+  lockPassword: string;
+  setLockPassword: (p: string) => void;
+  runLock: () => Promise<void>;
+  // Sign
+  signFile: File | null;
+  setSignFile: (f: File | null) => void;
+  signatureDataUrl: string;
+  setSignatureDataUrl: (s: string) => void;
+  signPage: number;
+  setSignPage: (n: number) => void;
+  signTotalPages: number;
+  runSign: () => Promise<void>;
   // Redact (Legal)
   redactFile: File | null;
   setRedactFile: (f: File | null) => void;
@@ -99,6 +116,16 @@ export function usePdfTools(): UsePdfToolsReturn {
   // Unlock state
   const [unlockFile, setUnlockFile] = useState<File | null>(null);
   const [unlockPassword, setUnlockPassword] = useState("");
+
+  // Lock state
+  const [lockFile, setLockFile] = useState<File | null>(null);
+  const [lockPassword, setLockPassword] = useState("");
+
+  // Sign state
+  const [signFile, setSignFileState] = useState<File | null>(null);
+  const [signTotalPages, setSignTotalPages] = useState(0);
+  const [signatureDataUrl, setSignatureDataUrl] = useState("");
+  const [signPage, setSignPage] = useState(1);
 
   // Redact state
   const [redactFile, setRedactFileState] = useState<File | null>(null);
@@ -230,6 +257,65 @@ export function usePdfTools(): UsePdfToolsReturn {
     }
   }, [unlockFile, unlockPassword]);
 
+  // ── Lock ─────────────────────────────────────────────────────────────────
+  const runLock = useCallback(async () => {
+    if (!lockFile) { setError("No PDF selected."); return; }
+    if (!lockPassword.trim()) { setError("Please enter a password."); return; }
+    if (!consumeToolUse()) { setStatus("limit_reached"); return; }
+    setRemainingToolUses(getRemainingToolUses());
+    setStatus("processing");
+    setError(null);
+    try {
+      await lockPDF(lockFile, { password: lockPassword } as LockOptions, setP);
+      setStatus("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setStatus("error");
+    }
+  }, [lockFile, lockPassword]);
+
+  // ── Sign ──────────────────────────────────────────────────────────────────
+  const setSignFile = useCallback(async (f: File | null) => {
+    setSignFileState(f);
+    setSignTotalPages(0);
+    setSignPage(1);
+    if (!f) return;
+    try {
+      const { default: pdfjsLib } = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+        "pdfjs-dist/build/pdf.worker.min.mjs",
+        import.meta.url
+      ).toString();
+      const buf = await f.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      setSignTotalPages(pdf.numPages);
+    } catch {
+      setSignTotalPages(1);
+    }
+  }, []);
+
+  const runSign = useCallback(async () => {
+    if (!signFile) { setError("No PDF selected."); return; }
+    if (!signatureDataUrl) { setError("Please draw or upload a signature."); return; }
+    if (!consumeToolUse()) { setStatus("limit_reached"); return; }
+    setRemainingToolUses(getRemainingToolUses());
+    setStatus("processing");
+    setError(null);
+    try {
+      await signPDF(signFile, {
+        signatureDataUrl,
+        page: signPage,
+        xFraction: 0.05,
+        yFraction: 0.75,
+        widthFraction: 0.35,
+      } as SignatureOptions, setP);
+      setStatus("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setStatus("error");
+    }
+  }, [signFile, signatureDataUrl, signPage]);
+
   // ── Redact ───────────────────────────────────────────────────────────────
   const setRedactFile = useCallback(async (f: File | null) => {
     setRedactFileState(f);
@@ -312,6 +398,8 @@ export function usePdfTools(): UsePdfToolsReturn {
     splitFile, setSplitFile: handleSetSplitFile, splitTotalPages, splitPageList, setSplitPageList, runSplit,
     compressFile, setCompressFile, compressQuality, setCompressQuality, runCompress,
     unlockFile, setUnlockFile, unlockPassword, setUnlockPassword, runUnlock,
+    lockFile, setLockFile, lockPassword, setLockPassword, runLock,
+    signFile, setSignFile, signatureDataUrl, setSignatureDataUrl, signPage, setSignPage, signTotalPages, runSign,
     redactFile, setRedactFile, redactPages, redactRects, addRedactRect, removeRedactRect, clearRedactRects, runRedact,
     privLogFile, setPrivLogFile, privLogEntries, runPrivilegeLog,
     reset,
