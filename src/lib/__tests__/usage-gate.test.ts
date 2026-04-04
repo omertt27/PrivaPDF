@@ -17,6 +17,8 @@ import {
   getDailyLimit,
   PLAN_FEATURES,
   PLAN_META,
+  __setPublicFlagsForTesting,
+  __resetPublicFlagsForTesting,
   type PlanTier,
 } from "../usage-gate";
 
@@ -24,6 +26,13 @@ import {
 
 beforeEach(() => {
   localStorage.clear();
+  // Disable public beta flags so tests verify the underlying plan logic.
+  // Individual tests that want to test flag behaviour can set their own flags.
+  __setPublicFlagsForTesting({});
+});
+
+afterEach(() => {
+  __resetPublicFlagsForTesting();
 });
 
 // ─── PLAN_META completeness ───────────────────────────────────────────────────
@@ -277,5 +286,58 @@ describe("Trial period bonus conversions", () => {
     localStorage.setItem("pdfconvert_trial_start", expired.toISOString());
     expect(getDailyLimit()).toBe(3);
     expect(getRemainingConversions()).toBe(3);
+  });
+});
+
+// ─── PUBLIC_FEATURE_FLAGS (beta period) ───────────────────────────────────────
+
+describe("PUBLIC_FEATURE_FLAGS beta overrides", () => {
+  const far = "2099-01-01";
+  const past = "2000-01-01";
+
+  it("isPublicFeature grants hasFeature() to a free user when flag is active", () => {
+    activatePlan("free", "");
+    __setPublicFlagsForTesting({ ocr: { until: far } });
+    expect(hasFeature("ocr")).toBe(true);
+  });
+
+  it("isPublicFeature does NOT grant hasFeature() once the date has passed", () => {
+    activatePlan("free", "");
+    __setPublicFlagsForTesting({ ocr: { until: past } });
+    expect(hasFeature("ocr")).toBe(false);
+  });
+
+  it("'unlimited' flag makes isPaidPlan() return true for a free user", () => {
+    activatePlan("free", "");
+    __setPublicFlagsForTesting({ unlimited: { until: far } });
+    expect(isPaidPlan()).toBe(true);
+  });
+
+  it("'unlimited' flag lifts conversion limit for free users", () => {
+    activatePlan("free", "");
+    __setPublicFlagsForTesting({ unlimited: { until: far } });
+    expect(getRemainingConversions()).toBe(Infinity);
+    for (let i = 0; i < 10; i++) expect(consumeConversion()).toBe(true);
+  });
+
+  it("'unlimited' flag lifts tool-use limit for free users", () => {
+    activatePlan("free", "");
+    __setPublicFlagsForTesting({ unlimited: { until: far } });
+    expect(getRemainingToolUses()).toBe(Infinity);
+    for (let i = 0; i < 10; i++) expect(consumeToolUse()).toBe(true);
+  });
+
+  it("an expired 'unlimited' flag still enforces free-tier limits", () => {
+    activatePlan("free", "");
+    __setPublicFlagsForTesting({ unlimited: { until: past } });
+    expect(isPaidPlan()).toBe(false);
+    expect(getRemainingConversions()).toBe(3);
+  });
+
+  it("flags have no effect on paid plans (already have the feature)", () => {
+    activatePlan("individual", "order_123");
+    __setPublicFlagsForTesting({});
+    expect(hasFeature("ocr")).toBe(true);
+    expect(hasFeature("xlsx")).toBe(true);
   });
 });

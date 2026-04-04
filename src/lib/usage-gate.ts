@@ -12,6 +12,54 @@ const DAILY_FREE_LIMIT       = 3;
 const DAILY_FREE_TOOLS_LIMIT = 3;
 const TRIAL_DAYS             = 7;
 
+// ─── Temporary public feature flags ───────────────────────────────────────────
+// Features listed here are treated as available to ALL users (including free)
+// until their `until` date. After that date they revert to normal plan gating.
+// To open a feature: add an entry. To close it: remove the entry or let it expire.
+//
+// Available feature keys: "ocr" | "xlsx" | "pptx" | "batch" | "page_range"
+//                         | "lock" | "sign" | "unlimited"
+//
+// Example — open OCR and batch to everyone until July 1 2026:
+//   ocr:   { until: "2026-07-01" },
+//   batch: { until: "2026-07-01" },
+//
+const PUBLIC_FEATURE_FLAGS: Partial<Record<string, { until: string }>> = {
+  // Open to all users until 2026-07-04 (3-month public beta)
+  // To close early: delete or comment out the entry you want to revert.
+  // Legal-only features (redaction, advanced_ocr, privilege_log) are intentionally excluded.
+  unlimited:  { until: "2026-07-04" }, // lifts the 3-conversions/day limit
+  ocr:        { until: "2026-07-04" }, // AI OCR for scanned PDFs
+  xlsx:       { until: "2026-07-04" }, // PDF → Excel export
+  pptx:       { until: "2026-07-04" }, // PDF → PowerPoint export
+  batch:      { until: "2026-07-04" }, // batch convert multiple PDFs
+  page_range: { until: "2026-07-04" }, // select specific pages to convert
+  lock:       { until: "2026-07-04" }, // password-protect PDFs locally
+  sign:       { until: "2026-07-04" }, // sign PDFs locally
+};
+
+/** Returns true if a feature is currently open to all users via a public flag. */
+function isPublicFeature(feature: string): boolean {
+  const flag = _publicFlags[feature];
+  if (!flag) return false;
+  return new Date() < new Date(flag.until);
+}
+
+// Internal reference — can be overridden in tests via __setPublicFlagsForTesting
+let _publicFlags: Partial<Record<string, { until: string }>> = PUBLIC_FEATURE_FLAGS;
+
+/** @internal — test-only escape hatch to override public flags without touching the source. */
+export function __setPublicFlagsForTesting(
+  flags: Partial<Record<string, { until: string }>>
+): void {
+  _publicFlags = flags;
+}
+
+/** @internal — restores the real PUBLIC_FEATURE_FLAGS after a test override. */
+export function __resetPublicFlagsForTesting(): void {
+  _publicFlags = PUBLIC_FEATURE_FLAGS;
+}
+
 export type PlanTier = "free" | "individual" | "pro" | "legal";
 
 // Plan metadata — single source of truth used across the app
@@ -53,6 +101,7 @@ export function getPlan(): PlanTier {
 }
 
 export function isPaidPlan(): boolean {
+  if (isPublicFeature("unlimited")) return true;
   return getPlan() !== "free";
 }
 
@@ -62,6 +111,7 @@ export function isProUser(): boolean {
 }
 
 export function hasFeature(feature: string): boolean {
+  if (isPublicFeature(feature)) return true;
   return (PLAN_FEATURES[getPlan()] as readonly string[]).includes(feature);
 }
 
@@ -189,6 +239,22 @@ export function getDailyLimit(): number {
   if (isPaidPlan()) return Infinity;
   const daysLeft = getTrialDaysLeft();
   return daysLeft > 0 ? DAILY_FREE_LIMIT + 2 : DAILY_FREE_LIMIT;
+}
+
+// ─── Public flag introspection (for UI banners) ────────────────────────────────
+
+/**
+ * Returns an array of features currently open to all users via PUBLIC_FEATURE_FLAGS,
+ * along with their expiry date. Useful for rendering "Free during beta" banners.
+ *
+ * Example usage:
+ *   const active = getActivePublicFlags();
+ *   // [{ feature: "ocr", until: "2026-07-01" }, ...]
+ */
+export function getActivePublicFlags(): { feature: string; until: string }[] {
+  return Object.entries(_publicFlags)
+    .filter(([feature]) => isPublicFeature(feature))
+    .map(([feature, flag]) => ({ feature, until: flag!.until }));
 }
 
 // ─── Email capture ─────────────────────────────────────────────────────────────

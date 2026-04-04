@@ -65,6 +65,20 @@ export default function ToolsPage() {
         </div>
       </nav>
 
+      {/* ── Beta banner ── */}
+      <div style={{
+        background: "#fff7ed", borderBottom: "1px solid #fbbf72",
+        padding: "10px 48px", display: "flex", alignItems: "center", gap: 10,
+        fontSize: 13, color: "#92400e", flexWrap: "wrap",
+      }}>
+        <span>🎉</span>
+        <span>
+          <strong>Public Beta:</strong> Lock PDF and Sign PDF are free for everyone until{" "}
+          <strong>July 4, 2026</strong>.{" "}
+          <a href="/#pricing" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Lock in Individual ($19) →</a>
+        </span>
+      </div>
+
       <main style={{ maxWidth: 820, margin: "0 auto", padding: "56px 24px", paddingLeft: "max(16px, env(safe-area-inset-left))", paddingRight: "max(16px, env(safe-area-inset-right))" }}>
         {/* Header */}
         <div style={{ marginBottom: 40, textAlign: "center" }}>

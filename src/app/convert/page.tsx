@@ -109,6 +109,20 @@ export default function ConvertPage() {
         </div>
       </nav>
 
+      {/* ── Beta banner ─────────────────────────────────────────────────────── */}
+      <div style={{
+        background: "#fff7ed", borderBottom: "1px solid #fbbf72",
+        padding: "10px 48px", display: "flex", alignItems: "center", gap: 10,
+        fontSize: 13, color: "#92400e", flexWrap: "wrap",
+      }}>
+        <span>🎉</span>
+        <span>
+          <strong>Public Beta:</strong> OCR, Excel, PowerPoint, batch, Lock &amp; Sign are all free until{" "}
+          <strong>July 4, 2026</strong>.{" "}
+          <a href="/#pricing" style={{ color: "#92400e", fontWeight: 600, textDecoration: "underline" }}>Lock in Individual ($19) to keep them →</a>
+        </span>
+      </div>
+
       {/* ── Memory warning ───────────────────────────────────────────────────── */}
       {memoryWarning && (
         <div style={{

@@ -712,26 +712,63 @@ export default function Home() {
           </p>
         </div>
 
+        {/* ── Beta banner ── */}
+        <div style={{
+          marginBottom: 40, padding: "16px 24px",
+          background: "#fff7ed", border: "1px solid #fbbf72",
+          borderRadius: 12, display: "flex", alignItems: "flex-start", gap: 14, flexWrap: "wrap",
+        }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>🎉</span>
+          <div>
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#92400e", marginBottom: 4 }}>
+              Public Beta — all features free until July 4, 2026
+            </p>
+            <p style={{ fontSize: 13, color: "#a16207", lineHeight: 1.55 }}>
+              OCR, Excel &amp; PowerPoint export, batch convert, page range, Lock PDF and Sign PDF are all unlocked for everyone during the beta.
+              No account, no card. After July 4 these revert to paid plans — lock in <a href="#pricing" style={{ color: "#92400e", fontWeight: 600 }}>Individual ($19)</a> now to keep them forever.
+            </p>
+          </div>
+        </div>
+
         <div className="pricing-grid">
 
           {/* ── FREE ── */}
           <div style={{ border: "1px solid var(--border)", borderRadius: 16, padding: 32, background: "var(--paper)", display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: 2, textTransform: "uppercase", color: "var(--muted)", marginBottom: 20 }}>Free</div>
             <div style={{ fontFamily: "var(--serif)", fontSize: 44, lineHeight: 1, marginBottom: 4 }}>$0</div>
-            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 24 }}>forever, no card needed</div>
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>forever, no card needed</div>
+            <div style={{
+              fontSize: 11, fontWeight: 600, color: "#92400e",
+              background: "#fff7ed", border: "1px solid #fbbf72",
+              borderRadius: 6, padding: "4px 10px", marginBottom: 20, display: "inline-block",
+            }}>
+              🎉 All features unlocked until July 4
+            </div>
             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, flex: 1 }}>
               {[
-                "3 conversions / day (PDF → Word)",
-                "Tables & formatting preserved",
-                "Merge, split, compress (3 uses/day)",
-                "Unlock password PDFs",
+                "Unlimited conversions (beta)",
+                "AI OCR for scanned PDFs (beta)",
+                "Excel + PowerPoint export (beta)",
+                "Batch convert (beta)",
+                "Lock PDF + Sign PDF (beta)",
+                "Merge, split, compress, unlock",
                 "Works offline after first visit",
-              ].map((f) => (
-                <li key={f} style={{ fontSize: 13, color: "var(--muted)", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                  <span style={{ width: 14, height: 14, background: "var(--accent-light)", borderRadius: "50%", flexShrink: 0, marginTop: 2, display: "inline-block" }} />
-                  {f}
-                </li>
-              ))}
+              ].map((f) => {
+                const isBeta = f.includes("(beta)");
+                return (
+                  <li key={f} style={{ fontSize: 13, color: isBeta ? "var(--ink)" : "var(--muted)", display: "flex", alignItems: "flex-start", gap: 8 }}>
+                    <span style={{ color: isBeta ? "#d97706" : "var(--accent)", flexShrink: 0, marginTop: 2, fontSize: 14, lineHeight: 1 }}>
+                      {isBeta ? "★" : "·"}
+                    </span>
+                    {f.replace(" (beta)", "")}
+                    {isBeta && (
+                      <span style={{ fontSize: 10, fontWeight: 600, background: "#fff7ed", color: "#92400e", border: "1px solid #fbbf72", padding: "1px 6px", borderRadius: 10, marginLeft: 2, flexShrink: 0 }}>
+                        beta
+                      </span>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             <Link href="/convert" style={{
               display: "block", padding: "12px 0", borderRadius: 8, fontSize: 13,
@@ -761,7 +798,7 @@ export default function Home() {
               background: "#fff7f0", border: "1px solid #ffd4b0",
               borderRadius: 6, padding: "4px 10px", marginBottom: 24, display: "inline-block",
             }}>
-              🔥 Launch price — may increase
+              🔥 Lock in now — beta ends July 4
             </div>
             <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, flex: 1 }}>
               {[
